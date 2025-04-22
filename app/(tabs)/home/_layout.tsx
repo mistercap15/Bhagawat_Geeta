@@ -13,9 +13,15 @@ export default function HomeLayout() {
         name="index"
         options={{ title: "Home", headerShown: false }}
       />
-      <Stack.Screen name="chapters" options={{ title: "Chapters" }} />
-      <Stack.Screen name="shlokas" options={{ title: "Shlokas" }} />
-      <Stack.Screen name="shlokaDetails" options={{ title: "Shloka Details" }} />
+      <Stack.Screen name="chapters/index" options={{ title: "Chapters" }} />
+      <Stack.Screen
+        name="chapters/[id]/shlokas"
+        options={{ title: "Shlokas" }}
+      />
+      <Stack.Screen
+        name="chapters/[id]/[verse_id]"
+        options={{ title: "Shloka Details" }}
+      />
     </Stack>
   );
 }
