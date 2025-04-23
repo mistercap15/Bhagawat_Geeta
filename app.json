@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Bhagawat_Geeta",
-    "slug": "Bhagawat_Geeta",
+    "name": "Bhagawat Gita",
+    "slug": "Bhagawat_Gita",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/appLogo.jpg",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,7 +14,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/appLogo.jpg",
         "backgroundColor": "#ffffff"
       },
       "package": "com.khilanpatel15.Bhagawat_Geeta"
@@ -29,7 +29,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/splashScreen.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"

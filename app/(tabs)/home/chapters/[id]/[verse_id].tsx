@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   ScrollView,
   TouchableOpacity,
+  ImageBackground,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
@@ -57,7 +58,12 @@ export default function VerseDetails() {
   }
 
   return (
-    <LinearGradient colors={["#fff7ed", "#fffbeb"]} className="flex-1">
+    <ImageBackground
+    source={require("@/assets/images/appBackground.jpg")}
+    resizeMode="cover"
+    style={{ flex: 1 }}
+    imageStyle={{ opacity: 0.15 }}
+  >
       <ScrollView className="px-6 py-4">
         <Text className="text-2xl font-semibold text-amber-900 mb-4">
           Chapter {verse.chapter}, Verse {verse.verse}
@@ -113,6 +119,6 @@ export default function VerseDetails() {
           Verse {currentVerseId} of {verses_count}
         </Text>
       </View>
-    </LinearGradient>
+    </ImageBackground>
   );
 }
