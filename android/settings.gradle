@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'Bhagawat_Geeta'
+rootProject.name = 'Bhagawat Gita'
 
 dependencyResolutionManagement {
   versionCatalogs {
