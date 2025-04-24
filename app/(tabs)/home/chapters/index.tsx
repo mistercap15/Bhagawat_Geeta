@@ -5,11 +5,13 @@ import { ProgressBar } from "react-native-paper";
 import { useEffect, useState } from "react";
 import api from "@/utils/api";
 import SkeletonCard from "@/components/skeletonCard";
+import { useThemeStyle } from "@/hooks/useThemeStyle";
 
 export default function ChaptersScreen() {
   const router = useRouter();
   const [chapters, setChapters] = useState<any>([]);
   const [loading, setLoading] = useState(true);
+  const { textColor, bgColor, sectionBg } = useThemeStyle();
 
   useEffect(() => {
     const fetchChapters = async () => {
@@ -28,22 +30,21 @@ export default function ChaptersScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center">
+      <View className={`flex-1 justify-center items-center ${bgColor}`}>
         <ActivityIndicator size="large" color="#f59e0b" />
-        <Text className="mt-2 text-amber-900">Loading chapters...</Text>
+        <Text className={`mt-2 ${textColor}`}>Loading chapters...</Text>
       </View>
     );
   }
-  
 
   return (
-    <ScrollView className="p-2 px-6 bg-[#fff7ed]">
-      <Text className="text-2xl font-bold text-amber-900 mb-4 ms-1">📖 All Chapters</Text>
+    <ScrollView className={`p-2 px-6 ${bgColor}`}>
+      <Text className={`text-2xl font-bold mb-4 ms-1 ${textColor}`}>📖 All Chapters</Text>
 
-      {chapters.map((chapter:any) => (
+      {chapters.map((chapter: any) => (
         <TouchableOpacity
           key={chapter.chapter_number}
-          className="bg-white rounded-2xl p-4 mb-4 shadow"
+          className={`${sectionBg} rounded-2xl p-4 mb-4 shadow`}
           onPress={() => router.push(`/(tabs)/home/chapters/${chapter.chapter_number}/shlokas`)}
         >
           <View className="flex-row items-center">
@@ -51,7 +52,7 @@ export default function ChaptersScreen() {
               <BookOpen size={24} color="#92400e" />
             </View>
             <View className="flex-1">
-              <Text className="text-lg font-semibold text-amber-900">
+              <Text className={`text-lg font-semibold ${textColor}`}>
                 Chapter {chapter.chapter_number}: {chapter.transliteration}
               </Text>
               <Text className="text-sm text-gray-600">{chapter.meaning.en}</Text>

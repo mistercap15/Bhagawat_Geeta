@@ -10,6 +10,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Star } from "lucide-react-native";
 import api from "@/utils/api";
+import { useThemeStyle } from "@/hooks/useThemeStyle";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function ShlokasScreen() {
   const { id } = useLocalSearchParams();
@@ -18,11 +20,14 @@ export default function ShlokasScreen() {
   const [favorites, setFavorites] = useState<boolean[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+   const { isDarkMode } = useTheme();
+   const bgColor = isDarkMode ? 'bg-gray-900' : 'bg-amber-50';
+   const textColor = isDarkMode ? 'text-white' : 'text-amber-900';
+   const sectionBg = isDarkMode ? 'bg-gray-800' : 'bg-white';
 
   const fetchChapterData = async () => {
     try {
       const chapterRes = await api.get(`/chapter/${id}/`);
-
       const versesCount = chapterRes.data.verses_count;
       const versesList = Array.from({ length: versesCount }, (_, index) => ({
         verse_number: index + 1,
@@ -50,24 +55,27 @@ export default function ShlokasScreen() {
 
   if (loading || !chapter) {
     return (
-      <View className="flex-1 justify-center items-center bg-[#fff7ed]">
+      <View className={`flex-1 justify-center items-center ${bgColor}`}>
         <ActivityIndicator size="large" color="#f59e0b" />
-        <Text className="mt-2 text-amber-900">Loading chapter...</Text>
+        <Text className={`mt-2 ${textColor}`}>Loading chapter...</Text>
       </View>
     );
   }
 
   return (
-    <LinearGradient colors={["#fff7ed", "#fffbeb"]} className="flex-1">
-      <ScrollView className="px-6 py-4">
-        <View className="mb-6 p-5 bg-white rounded-2xl shadow">
-          <Text className="text-2xl font-bold text-amber-900 mb-1">
+    <LinearGradient
+      colors={["#fff7ed", "#fffbeb"]}
+      className="flex-1"
+    >
+      <ScrollView className={`px-6 py-4 ${bgColor}`}>
+        <View className={`mb-6 p-5 rounded-2xl shadow ${sectionBg}`}>
+          <Text className={`text-2xl font-bold mb-1 ${textColor}`}>
             📖 Chapter {chapter.chapter_number}: {chapter.transliteration}
           </Text>
-          <Text className="text-base text-gray-700 italic mb-3">
+          <Text className="text-base text-gray-500 italic mb-3">
             "{chapter.meaning.en}"
           </Text>
-          <Text className="text-gray-800 leading-relaxed text-[16px]">
+          <Text className={`leading-relaxed text-[16px] ${textColor}`}>
             {chapter.summary.en}
           </Text>
         </View>
@@ -75,7 +83,7 @@ export default function ShlokasScreen() {
         {verses.map((verse, index) => (
           <View
             key={verse.verse_number}
-            className="bg-white rounded-2xl p-5 mb-5 shadow"
+            className={`rounded-2xl p-5 mb-5 shadow ${sectionBg}`}
           >
             <TouchableOpacity
               onPress={() =>
@@ -83,10 +91,9 @@ export default function ShlokasScreen() {
                   `/home/chapters/${id}/${verse.verse_number}?verses_count=${chapter.verses_count}`
                 )
               }
-              className="text-amber-900"
             >
               <View className="border-l-4 border-amber-500 pl-4">
-                <Text className="text-lg font-semibold text-amber-900 mb-2">
+                <Text className={`text-lg font-semibold mb-2 ${textColor}`}>
                   Verse {verse.verse_number}
                 </Text>
               </View>
@@ -100,7 +107,7 @@ export default function ShlokasScreen() {
                 size={24}
                 color={favorites[index] ? "#f59e0b" : "#d1d5db"}
               />
-              <Text className="ml-2 text-amber-900 font-medium">
+              <Text className={`ml-2 font-medium ${textColor}`}>
                 {favorites[index] ? "Added to Favorites" : "Add to Favorites"}
               </Text>
             </TouchableOpacity>

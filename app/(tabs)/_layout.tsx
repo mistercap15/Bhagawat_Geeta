@@ -1,30 +1,40 @@
-// app/(tabs)/_layout.tsx
 import { Tabs } from 'expo-router';
 import { HomeIcon, SearchIcon } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 
 export default function Layout() {
-  const theme = useColorScheme();
-  const isLight = theme === 'light';
+  return (
+    <ThemeProvider>
+      <LayoutContent />
+    </ThemeProvider>
+  );
+}
+
+function LayoutContent() {
+  const { isDarkMode } = useTheme();
+  const statusBarStyle = isDarkMode ? 'light' : 'dark';
+  const statusBarBackground = isDarkMode ? '#000' : '#fff7ed';
+  const tabBarStyle = {
+    backgroundColor: isDarkMode ? '#333' : '#fff',
+    height: 60,
+    paddingBottom: 10,
+    paddingTop: 5,
+  };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isLight ? '#fff7ed' : '#000' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: isDarkMode ? '#000' : '#fff7ed' }}>
       <StatusBar
-        style={isLight ? 'light' : 'dark'}
-        backgroundColor="#fff7ed"
+        style={statusBarStyle} // Controls text/icon color based on theme
+        backgroundColor={statusBarBackground} // Background color based on theme
         translucent={false}
       />
       <Tabs
         screenOptions={{
           headerShown: false,
           tabBarHideOnKeyboard: true,
-          tabBarStyle: {
-            height: 60,
-            paddingBottom: 10,
-            paddingTop: 5,
-          },
+          tabBarStyle: tabBarStyle, // Apply dynamic TabBar style
         }}
       >
         <Tabs.Screen
