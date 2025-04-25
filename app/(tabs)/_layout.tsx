@@ -26,15 +26,15 @@ function LayoutContent() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: isDarkMode ? '#000' : '#fff7ed' }}>
       <StatusBar
-        style={statusBarStyle} // Controls text/icon color based on theme
-        backgroundColor={statusBarBackground} // Background color based on theme
+        style={statusBarStyle} 
+        backgroundColor={statusBarBackground}
         translucent={false}
       />
       <Tabs
         screenOptions={{
           headerShown: false,
           tabBarHideOnKeyboard: true,
-          tabBarStyle: tabBarStyle, // Apply dynamic TabBar style
+          tabBarStyle: tabBarStyle,
         }}
       >
         <Tabs.Screen

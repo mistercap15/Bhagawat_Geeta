@@ -1,32 +1,70 @@
-import { ScrollView, TouchableOpacity, View, Text, ActivityIndicator } from "react-native";
+import {
+  ScrollView,
+  TouchableOpacity,
+  View,
+  Text,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
 import { BookOpen } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { ProgressBar } from "react-native-paper";
 import { useEffect, useState } from "react";
 import api from "@/utils/api";
-import SkeletonCard from "@/components/skeletonCard";
 import { useThemeStyle } from "@/hooks/useThemeStyle";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ChaptersScreen() {
   const router = useRouter();
-  const [chapters, setChapters] = useState<any>([]);
+  const [chapters, setChapters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const { textColor, bgColor, sectionBg } = useThemeStyle();
 
-  useEffect(() => {
-    const fetchChapters = async () => {
-      try {
-        const response = await api.get("/chapters");
-        setChapters(response.data);
-      } catch (error) {
-        console.error("Error fetching chapters:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchChapters = async () => {
+    try {
+      const response = await api.get("/chapters");
+      const chaptersData = response.data;
 
+      const updatedChapters = await Promise.all(
+        chaptersData.map(async (chapter: any) => {
+          let readCount = 0;
+
+          for (let i = 1; i <= chapter.verses_count; i++) {
+            const key = `read_verse_${i + (chapter.chapter_number - 1) * 100}`;
+            const isRead = await AsyncStorage.getItem(key);
+            if (isRead === "true") readCount++;
+          }
+
+          const progress = chapter.verses_count
+            ? readCount / chapter.verses_count
+            : 0;
+
+          return {
+            ...chapter,
+            readCount,
+            progress,
+          };
+        })
+      );
+
+      setChapters(updatedChapters);
+    } catch (error) {
+      console.error("Error fetching chapters:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false); // Important for pull-to-refresh
+    }
+  };
+
+  useEffect(() => {
     fetchChapters();
   }, []);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchChapters();
+  };
 
   if (loading) {
     return (
@@ -38,14 +76,28 @@ export default function ChaptersScreen() {
   }
 
   return (
-    <ScrollView className={`p-2 px-6 ${bgColor}`}>
-      <Text className={`text-2xl font-bold mb-4 ms-1 ${textColor}`}>📖 All Chapters</Text>
+    <ScrollView
+      className={`p-2 px-6 ${bgColor}`}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          colors={["#f59e0b"]}
+          tintColor="#f59e0b"
+        />
+      }
+    >
+      <Text className={`text-2xl font-bold mb-4 ms-1 ${textColor}`}>
+        📖 All Chapters
+      </Text>
 
-      {chapters.map((chapter: any) => (
+      {chapters.map((chapter) => (
         <TouchableOpacity
           key={chapter.chapter_number}
           className={`${sectionBg} rounded-2xl p-4 mb-4 shadow`}
-          onPress={() => router.push(`/(tabs)/home/chapters/${chapter.chapter_number}/shlokas`)}
+          onPress={() =>
+            router.push(`/(tabs)/home/chapters/${chapter.chapter_number}/shlokas`)
+          }
         >
           <View className="flex-row items-center">
             <View className="bg-amber-200 p-3 rounded-full mr-4">
@@ -61,11 +113,13 @@ export default function ChaptersScreen() {
 
           <View className="mt-4">
             <ProgressBar
-              progress={0}
+              progress={chapter.progress}
               color="#facc15"
               style={{ height: 8, borderRadius: 4 }}
             />
-            <Text className="text-sm text-gray-500 mt-1 text-right">0% Read</Text>
+            <Text className="text-sm text-gray-500 mt-1 text-right">
+              {Math.round(chapter.progress * 100)}% Read
+            </Text>
           </View>
         </TouchableOpacity>
       ))}

@@ -1,11 +1,12 @@
 import { useTheme } from "@/context/ThemeContext";
 import { Stack } from "expo-router";
+import { View } from "lucide-react-native";
 
 export default function HomeLayout() {
   const { isDarkMode } = useTheme();
 
-  const headerBg = isDarkMode ? "#1f2937" : "#fff7ed"; // dark: gray-800, light: amber-50
-  const headerText = isDarkMode ? "#facc15" : "#92400e"; // dark: amber-400, light: amber-900
+  const headerBg = isDarkMode ? "#1f2937" : "#fff7ed";
+  const headerText = isDarkMode ? "#facc15" : "#92400e";
 
   return (
     <Stack
@@ -13,7 +14,8 @@ export default function HomeLayout() {
         headerStyle: { backgroundColor: headerBg },
         headerTitleStyle: { color: headerText },
         headerTintColor: headerText,
-        presentation: "transparentModal"
+        presentation: "transparentModal",
+        animation: 'fade',
       }}
     >
       <Stack.Screen
