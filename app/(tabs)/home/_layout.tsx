@@ -12,7 +12,8 @@ export default function HomeLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: headerBg },
         headerTitleStyle: { color: headerText },
-        headerTintColor: headerText, // 🎯 This changes the back arrow color
+        headerTintColor: headerText,
+        presentation: "transparentModal"
       }}
     >
       <Stack.Screen

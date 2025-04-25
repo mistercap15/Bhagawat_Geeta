@@ -14,6 +14,7 @@ export default function HomeLayout() {
         headerStyle: { backgroundColor: headerBg },
         headerTitleStyle: { color: headerText },
         headerTintColor: headerText,
+        presentation: "transparentModal"
       }}
     >
       <Stack.Screen name="index" options={{ title: "Explore" }} />
