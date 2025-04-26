@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import ThemedLayout from "@/components/ThemedLayout";
+import Toast from "react-native-toast-message";
 
 export default function Layout() {
   return (
@@ -25,6 +26,7 @@ function LayoutContent() {
   };
 
   return (
+    <>
     <ThemedLayout>
       <Tabs
         screenOptions={{
@@ -53,5 +55,7 @@ function LayoutContent() {
         />
       </Tabs>
     </ThemedLayout>
+     <Toast />
+     </>
   );
 }

@@ -1,43 +1,39 @@
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Image,
-  Platform,
-  ScrollView,
   View,
-  TouchableOpacity,
+  ScrollView,
   Text,
   RefreshControl,
+  TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { useEffect, useState } from "react";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
-import {
-  Share2,
-  BookOpen,
-  Headphones,
-  BookText,
-  Star,
-  Sun,
-} from "lucide-react-native";
-import { useRouter } from "expo-router";
-import { useThemeStyle } from "@/hooks/useThemeStyle";
 import { useTheme } from "@/context/ThemeContext";
-import axios from "axios";
+import { Share2, BookText, BookOpen, Star, Headphones, Sun } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import Toast from 'react-native-toast-message';
 import api from "@/utils/api";
+import * as Sharing from "expo-sharing";
+import * as MediaLibrary from "expo-media-library";
+import { captureRef } from "react-native-view-shot";  // Import view-shot
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 export default function HomeScreen() {
   const [shlokaOfTheDay, setShlokaOfTheDay] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false); // Track loading state
-  const [error, setError] = useState(false); // Track error state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [permissionGranted, setPermissionGranted] = useState(false);  // New state for permissions
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const bgColor = isDarkMode ? "bg-gray-900" : "bg-amber-50";
   const textColor = isDarkMode ? "text-white" : "text-amber-900";
   const sectionBg = isDarkMode ? "bg-gray-800" : "bg-white";
+  
+  const viewRef = useRef<any>(null); // Reference to the view to capture
 
   const fetchShloka = async () => {
-    setLoading(true); // Start loading
-    setError(false); // Reset error state
+    setLoading(true);
+    setError(false);
     const randomChapter = Math.floor(Math.random() * 18) + 1;
     const versesCount: any = {
       1: 47,
@@ -72,14 +68,15 @@ export default function HomeScreen() {
       });
     } catch (error) {
       console.error("Error fetching sloka of the day:", error);
-      setError(true); // Set error state if fetch fails
+      setError(true);
     } finally {
-      setLoading(false); // End loading
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchShloka();
+    requestPermissions();  // Request permissions when component mounts
   }, []);
 
   const onRefresh = async () => {
@@ -87,6 +84,58 @@ export default function HomeScreen() {
     await fetchShloka();
     setRefreshing(false);
   };
+
+  // Request Media Library Permissions
+  const requestPermissions = async () => {
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    if (status === "granted") {
+      setPermissionGranted(true);
+    } else {
+      console.log("Permission to access media library was denied.");
+    }
+  };
+
+
+  const shareShloka = async () => {
+    if (viewRef.current && permissionGranted) {
+      try {
+        const uri = await captureRef(viewRef, {
+          format: "png",
+          quality: 0.8,
+        });
+        const asset = await MediaLibrary.createAssetAsync(uri);
+        const album = await MediaLibrary.getAlbumAsync("Shlokas");
+        if (album == null) {
+          await MediaLibrary.createAlbumAsync("Shlokas", asset, false);
+        } else {
+          await MediaLibrary.addAssetsToAlbumAsync([asset], album.id, false);
+        }
+        await Sharing.shareAsync(uri);
+  
+        // SUCCESS TOAST
+        Toast.show({
+          type: 'success',
+          text1: 'Shloka Shared!',
+          text2: 'Successfully saved and ready to share 📜',
+        });
+  
+      } catch (error) {
+        // ERROR TOAST
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Something went wrong while sharing 😔',
+        });
+      }
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Permission Denied',
+        text2: 'Cannot access media library. Please allow permissions.',
+      });
+    }
+  };
+  
 
   return (
     <View className={`flex-1 ${bgColor}`}>
@@ -96,10 +145,7 @@ export default function HomeScreen() {
         }
       >
         {/* Header */}
-        <Animated.View
-          entering={FadeInUp.duration(800)}
-          className="items-center mt-6 mb-8"
-        >
+        <View className="items-center mt-6 mb-8">
           <BookText size={80} color="#92400e" />
           <Text className={`text-4xl font-bold mt-4 ${textColor}`}>
             Bhagavad Gita
@@ -107,18 +153,15 @@ export default function HomeScreen() {
           <Text className={`text-base mt-1 ${textColor}`}>
             Daily Wisdom for the Soul
           </Text>
-        </Animated.View>
+        </View>
 
         {/* Shloka Card */}
-        <Animated.View
-          entering={FadeInDown.duration(1000)}
-          className={`mx-5 ${sectionBg} rounded-3xl shadow-md p-6 mb-8`}
-        >
+        <View ref={viewRef} className={`mx-5 ${sectionBg} rounded-3xl shadow-md p-6 mb-8`}>
           <Text className={`text-xl font-semibold mb-3 ${textColor}`}>
             📜 Shloka of the Day
           </Text>
           {loading ? (
-            <ActivityIndicator size="large" color="#92400e" /> // Show spinner while loading
+            <ActivityIndicator size="large" color="#92400e" />
           ) : error ? (
             <Text className={`text-base ${textColor} text-center`}>
               No data available at the moment. Pull to refresh.
@@ -128,9 +171,7 @@ export default function HomeScreen() {
               <Text className={`text-base mb-2 ${textColor}`}>
                 Chapter {shlokaOfTheDay.chapter}, Verse {shlokaOfTheDay.verse}
               </Text>
-              <Text
-                className={`text-2xl font-bold leading-relaxed mb-3 ${textColor}`}
-              >
+              <Text className={`text-2xl font-bold leading-relaxed mb-3 ${textColor}`}>
                 {shlokaOfTheDay.text}
               </Text>
               <Text className={`text-base leading-relaxed ${textColor}`}>
@@ -141,13 +182,13 @@ export default function HomeScreen() {
           <View className="flex-row justify-end mt-4">
             <TouchableOpacity
               className="flex-row items-center space-x-1"
-              onPress={() => console.log("Share shloka")}
+              onPress={shareShloka} // Share the image on button click
             >
               <Share2 size={18} color="#92400e" />
               <Text className="text-amber-700 font-semibold">Share</Text>
             </TouchableOpacity>
           </View>
-        </Animated.View>
+        </View>
 
         {/* Explore Gita */}
         <View className={`mx-5 mb-5 rounded-3xl ${sectionBg} p-4`}>

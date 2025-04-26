@@ -19,6 +19,7 @@ export default function ExploreLayout() {
           headerTitleStyle: { color: headerText },
           headerTintColor: headerText,
           animation: "ios_from_right",
+          headerTitleAlign: "center",
         }}
       >
         <Stack.Screen name="index" options={{ title: "Explore" }} />

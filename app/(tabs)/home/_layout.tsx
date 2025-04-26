@@ -19,6 +19,7 @@ export default function HomeLayout() {
           headerTitleStyle: { color: headerText },
           headerTintColor: headerText,
           animation: "ios_from_right",
+          headerTitleAlign: "center",
         }}
       >
         <Stack.Screen
@@ -34,6 +35,10 @@ export default function HomeLayout() {
           name="chapters/[id]/[verse_id]"
           options={{ title: "Shloka Details" }}
         />
+        <Stack.Screen
+          name="favorite/index"
+          options={{ title: "Favorites" }}
+          />
       </Stack>
     </ThemedLayout>
   );

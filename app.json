@@ -7,7 +7,7 @@
     "icon": "./assets/images/appLogo.jpg",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.khilanpatel15.Bhagawat-Geeta"
