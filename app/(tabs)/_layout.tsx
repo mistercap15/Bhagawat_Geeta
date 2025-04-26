@@ -1,8 +1,9 @@
-import { Tabs } from 'expo-router';
-import { HomeIcon, SearchIcon } from 'lucide-react-native';
-import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { Tabs } from "expo-router";
+import { HomeIcon, SearchIcon } from "lucide-react-native";
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ThemeProvider, useTheme } from "@/context/ThemeContext";
+import ThemedLayout from "@/components/ThemedLayout";
 
 export default function Layout() {
   return (
@@ -14,22 +15,17 @@ export default function Layout() {
 
 function LayoutContent() {
   const { isDarkMode } = useTheme();
-  const statusBarStyle = isDarkMode ? 'light' : 'dark';
-  const statusBarBackground = isDarkMode ? '#000' : '#fff7ed';
+  const statusBarStyle = isDarkMode ? "light" : "dark";
+  const statusBarBackground = isDarkMode ? "#000" : "#fff7ed";
   const tabBarStyle = {
-    backgroundColor: isDarkMode ? '#333' : '#fff',
+    backgroundColor: isDarkMode ? "#333" : "#fff",
     height: 60,
     paddingBottom: 10,
     paddingTop: 5,
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: isDarkMode ? '#000' : '#fff7ed' }}>
-      <StatusBar
-        style={statusBarStyle} 
-        backgroundColor={statusBarBackground}
-        translucent={false}
-      />
+    <ThemedLayout>
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -40,18 +36,22 @@ function LayoutContent() {
         <Tabs.Screen
           name="home"
           options={{
-            title: 'Home',
-            tabBarIcon: ({ color, size }) => <HomeIcon color={color} size={size} />,
+            title: "Home",
+            tabBarIcon: ({ color, size }) => (
+              <HomeIcon color={color} size={size} />
+            ),
           }}
         />
         <Tabs.Screen
           name="explore"
           options={{
-            title: 'Explore',
-            tabBarIcon: ({ color, size }) => <SearchIcon color={color} size={size} />,
+            title: "Explore",
+            tabBarIcon: ({ color, size }) => (
+              <SearchIcon color={color} size={size} />
+            ),
           }}
         />
       </Tabs>
-    </SafeAreaView>
+    </ThemedLayout>
   );
 }

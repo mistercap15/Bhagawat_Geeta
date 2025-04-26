@@ -15,7 +15,7 @@ import {
   CheckSquare,
   Square,
 } from "lucide-react-native";
-import api from "@/utils/api"; // Custom Axios instance
+import api from "@/utils/api";
 import { useTheme } from "@/context/ThemeContext";
 import { ProgressBar } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -127,7 +127,6 @@ export default function VerseDetails() {
           </Text>
         </View>
 
-        {/* Favorite and Read Status with improved design */}
         <View className="flex-row justify-between mb-6 space-x-6">
           <View className="flex-row items-center space-x-2">
             <TouchableOpacity onPress={toggleFavorite}>
@@ -159,7 +158,6 @@ export default function VerseDetails() {
 
       <View className={`px-6 py-4 ${bgColor}`}>
         <View className="flex-row items-center justify-between w-full mb-3">
-          {/* Previous button container */}
           <View className="flex-1 items-start">
             {currentVerseId > 1 && (
               <TouchableOpacity
@@ -171,14 +169,12 @@ export default function VerseDetails() {
             )}
           </View>
 
-          {/* Spacer to keep the verse number centered */}
           <View className="flex-1 items-center">
             <Text className={`text-lg ${textColor}`}>
               Verse {currentVerseId} of {verses_count}
             </Text>
           </View>
 
-          {/* Next button container */}
           <View className="flex-1 items-end">
             {currentVerseId < parseInt(verses_count as string) && (
               <TouchableOpacity
