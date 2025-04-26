@@ -62,7 +62,6 @@ export default function HomeScreen() {
     const randomVerse =
       Math.floor(Math.random() * versesCount[randomChapter]) + 1;
     try {
-      console.log("randomChapter,randomVerse", randomChapter, randomVerse);
       const response = await api.get(`/slok/${randomChapter}/${randomVerse}`);
       const slokaData = response.data;
       setShlokaOfTheDay({

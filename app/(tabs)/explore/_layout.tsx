@@ -1,7 +1,8 @@
 import { useTheme } from "@/context/ThemeContext";
 import { Stack } from "expo-router";
+import { useEffect, useState } from "react";
 
-export default function HomeLayout() {
+export default function ExploreLayout() {
   const { isDarkMode } = useTheme();
 
   const headerBg = isDarkMode ? "#1f2937" : "#fff7ed";
@@ -14,8 +15,8 @@ export default function HomeLayout() {
         headerStyle: { backgroundColor: headerBg },
         headerTitleStyle: { color: headerText },
         headerTintColor: headerText,
-        presentation: "transparentModal",
-        animation: 'fade',
+        // presentation: "transparentModal",
+        // animation: 'fade',
       }}
     >
       <Stack.Screen name="index" options={{ title: "Explore" }} />

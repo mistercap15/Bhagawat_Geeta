@@ -14,8 +14,8 @@ export default function HomeLayout() {
         headerStyle: { backgroundColor: headerBg },
         headerTitleStyle: { color: headerText },
         headerTintColor: headerText,
-        presentation: "transparentModal",
-        animation: 'fade',
+        // presentation: "containedTransparentModal",
+        // animation: 'fade',
       }}
     >
       <Stack.Screen
