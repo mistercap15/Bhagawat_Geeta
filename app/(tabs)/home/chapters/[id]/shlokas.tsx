@@ -5,8 +5,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { useEffect, useState } from "react";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import api from "@/utils/api";
 import { useTheme } from "@/context/ThemeContext";
@@ -31,13 +31,9 @@ export default function ShlokasScreen() {
     try {
       const chapterRes = await api.get(`/chapter/${id}/`);
       const versesCount = chapterRes.data.verses_count;
-
-      // Prepare the read verses
       const readSet = new Set<number>();
       for (let i = 1; i <= versesCount; i++) {
-        const key = `read_verse_${
-          i + (chapterRes.data.chapter_number - 1) * 100
-        }`;
+        const key = `read_verse_${chapterRes.data.chapter_number}_${i}`;
         const isRead = await AsyncStorage.getItem(key);
         if (isRead === "true") {
           readSet.add(i);
@@ -58,9 +54,11 @@ export default function ShlokasScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchChapterData();
-  }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchChapterData();
+    }, [id])
+  );
 
   if (loading || !chapter) {
     return (

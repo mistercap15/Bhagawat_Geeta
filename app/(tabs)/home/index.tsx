@@ -8,13 +8,20 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
-import { Share2, BookText, BookOpen, Star, Headphones, Sun } from "lucide-react-native";
+import {
+  Share2,
+  BookText,
+  BookOpen,
+  Star,
+  Headphones,
+  Sun,
+} from "lucide-react-native";
 import { useRouter } from "expo-router";
-import Toast from 'react-native-toast-message';
+import Toast from "react-native-toast-message";
 import api from "@/utils/api";
 import * as Sharing from "expo-sharing";
 import * as MediaLibrary from "expo-media-library";
-import { captureRef } from "react-native-view-shot";  // Import view-shot
+import { captureRef } from "react-native-view-shot";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 export default function HomeScreen() {
@@ -22,14 +29,13 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [permissionGranted, setPermissionGranted] = useState(false);  // New state for permissions
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const bgColor = isDarkMode ? "bg-gray-900" : "bg-amber-50";
   const textColor = isDarkMode ? "text-white" : "text-amber-900";
   const sectionBg = isDarkMode ? "bg-gray-800" : "bg-white";
-  
-  const viewRef = useRef<any>(null); // Reference to the view to capture
+
+  const viewRef = useRef<any>(null);
 
   const fetchShloka = async () => {
     setLoading(true);
@@ -76,7 +82,6 @@ export default function HomeScreen() {
 
   useEffect(() => {
     fetchShloka();
-    requestPermissions();  // Request permissions when component mounts
   }, []);
 
   const onRefresh = async () => {
@@ -85,57 +90,36 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  // Request Media Library Permissions
-  const requestPermissions = async () => {
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    if (status === "granted") {
-      setPermissionGranted(true);
-    } else {
-      console.log("Permission to access media library was denied.");
-    }
-  };
-
-
   const shareShloka = async () => {
-    if (viewRef.current && permissionGranted) {
+    if (viewRef.current) {
       try {
         const uri = await captureRef(viewRef, {
           format: "png",
           quality: 0.8,
         });
-        const asset = await MediaLibrary.createAssetAsync(uri);
-        const album = await MediaLibrary.getAlbumAsync("Shlokas");
-        if (album == null) {
-          await MediaLibrary.createAlbumAsync("Shlokas", asset, false);
-        } else {
-          await MediaLibrary.addAssetsToAlbumAsync([asset], album.id, false);
-        }
+
         await Sharing.shareAsync(uri);
-  
-        // SUCCESS TOAST
+
         Toast.show({
-          type: 'success',
-          text1: 'Shloka Shared!',
-          text2: 'Successfully saved and ready to share 📜',
+          type: "success",
+          text1: "Shloka Shared!",
+          text2: "Ready to inspire others 📜",
         });
-  
       } catch (error) {
-        // ERROR TOAST
         Toast.show({
-          type: 'error',
-          text1: 'Error',
-          text2: 'Something went wrong while sharing 😔',
+          type: "error",
+          text1: "Error",
+          text2: "Something went wrong while sharing 😔",
         });
       }
     } else {
       Toast.show({
-        type: 'error',
-        text1: 'Permission Denied',
-        text2: 'Cannot access media library. Please allow permissions.',
+        type: "error",
+        text1: "Error",
+        text2: "Unable to capture view.",
       });
     }
   };
-  
 
   return (
     <View className={`flex-1 ${bgColor}`}>
@@ -156,7 +140,10 @@ export default function HomeScreen() {
         </View>
 
         {/* Shloka Card */}
-        <View ref={viewRef} className={`mx-5 ${sectionBg} rounded-3xl shadow-md p-6 mb-8`}>
+        <View
+          ref={viewRef}
+          className={`mx-5 ${sectionBg} rounded-3xl shadow-md p-6 mb-8`}
+        >
           <Text className={`text-xl font-semibold mb-3 ${textColor}`}>
             📜 Shloka of the Day
           </Text>
@@ -171,7 +158,9 @@ export default function HomeScreen() {
               <Text className={`text-base mb-2 ${textColor}`}>
                 Chapter {shlokaOfTheDay.chapter}, Verse {shlokaOfTheDay.verse}
               </Text>
-              <Text className={`text-2xl font-bold leading-relaxed mb-3 ${textColor}`}>
+              <Text
+                className={`text-2xl font-bold leading-relaxed mb-3 ${textColor}`}
+              >
                 {shlokaOfTheDay.text}
               </Text>
               <Text className={`text-base leading-relaxed ${textColor}`}>

@@ -4,12 +4,11 @@ import {
   View,
   Text,
   ActivityIndicator,
-  RefreshControl,
 } from "react-native";
 import { BookOpen } from "lucide-react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { ProgressBar } from "react-native-paper";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import api from "@/utils/api";
 import { useThemeStyle } from "@/hooks/useThemeStyle";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -18,7 +17,6 @@ export default function ChaptersScreen() {
   const router = useRouter();
   const [chapters, setChapters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const { textColor, bgColor, sectionBg } = useThemeStyle();
 
   const fetchChapters = async () => {
@@ -31,11 +29,11 @@ export default function ChaptersScreen() {
           let readCount = 0;
 
           for (let i = 1; i <= chapter.verses_count; i++) {
-            const key = `read_verse_${i + (chapter.chapter_number - 1) * 100}`;
+            const key = `read_verse_${chapter.chapter_number}_${i}`;
             const isRead = await AsyncStorage.getItem(key);
             if (isRead === "true") readCount++;
           }
-
+  
           const progress = chapter.verses_count
             ? readCount / chapter.verses_count
             : 0;
@@ -53,18 +51,14 @@ export default function ChaptersScreen() {
       console.error("Error fetching chapters:", error);
     } finally {
       setLoading(false);
-      setRefreshing(false); // Important for pull-to-refresh
     }
   };
 
-  useEffect(() => {
-    fetchChapters();
-  }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchChapters();
-  };
+  useFocusEffect(
+    useCallback(() => {
+      fetchChapters();
+    }, [])
+  );
 
   if (loading) {
     return (
@@ -76,17 +70,7 @@ export default function ChaptersScreen() {
   }
 
   return (
-    <ScrollView
-      className={`p-2 px-6 ${bgColor}`}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          colors={["#f59e0b"]}
-          tintColor="#f59e0b"
-        />
-      }
-    >
+    <ScrollView className={`p-2 px-6 ${bgColor}`}>
       <Text className={`text-2xl font-bold mb-4 ms-1 ${textColor}`}>
         📖 All Chapters
       </Text>

@@ -43,8 +43,8 @@ export default function VerseDetails() {
       const favoriteStatus = await AsyncStorage.getItem(`favorite_verse_${chapterId}_${verseId}`);
       setIsFavorite(favoriteStatus === "true");
 
-      const readStatus = await AsyncStorage.getItem(`read_verse_${verseId}`);
-      setIsRead(readStatus === "true");
+      const readStatus = await AsyncStorage.getItem(`read_verse_${chapterId}_${verseId}`);
+      setIsRead(readStatus === "true");      
     } catch (error) {
       console.error("Error fetching verse details:", error);
     } finally {
@@ -72,8 +72,6 @@ export default function VerseDetails() {
   const toggleFavorite = async () => {
     const newFavoriteStatus = !isFavorite;
     setIsFavorite(newFavoriteStatus);
-
-    // Save the favorite status to AsyncStorage
     if (newFavoriteStatus) {
       await AsyncStorage.setItem(
         `favorite_verse_${id}_${verse.verse}`,
@@ -88,10 +86,10 @@ export default function VerseDetails() {
     const newReadStatus = !isRead;
     setIsRead(newReadStatus);
     await AsyncStorage.setItem(
-      `read_verse_${currentVerseId}`,
+      `read_verse_${id}_${currentVerseId}`,
       newReadStatus.toString()
     );
-  };
+  };  
 
   if (loading) {
     return (
