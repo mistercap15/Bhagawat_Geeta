@@ -39,12 +39,12 @@ export default function VerseDetails() {
     try {
       const response = await api.get(`/slok/${chapterId}/${verseId}`);
       setVerse(response.data);
-      setIsFavorite(
-        (await AsyncStorage.getItem(`favorite_verse_${verseId}`)) === "true"
-      );
-      setIsRead(
-        (await AsyncStorage.getItem(`read_verse_${verseId}`)) === "true"
-      );
+
+      const favoriteStatus = await AsyncStorage.getItem(`favorite_verse_${chapterId}_${verseId}`);
+      setIsFavorite(favoriteStatus === "true");
+
+      const readStatus = await AsyncStorage.getItem(`read_verse_${verseId}`);
+      setIsRead(readStatus === "true");
     } catch (error) {
       console.error("Error fetching verse details:", error);
     } finally {
@@ -72,10 +72,16 @@ export default function VerseDetails() {
   const toggleFavorite = async () => {
     const newFavoriteStatus = !isFavorite;
     setIsFavorite(newFavoriteStatus);
-    await AsyncStorage.setItem(
-      `favorite_verse_${currentVerseId}`,
-      newFavoriteStatus.toString()
-    );
+
+    // Save the favorite status to AsyncStorage
+    if (newFavoriteStatus) {
+      await AsyncStorage.setItem(
+        `favorite_verse_${id}_${verse.verse}`,
+        "true"
+      );
+    } else {
+      await AsyncStorage.removeItem(`favorite_verse_${id}_${verse.verse}`);
+    }
   };
 
   const toggleRead = async () => {

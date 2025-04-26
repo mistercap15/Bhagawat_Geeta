@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Text,
   RefreshControl,
-  ActivityIndicator, // Import the ActivityIndicator for loading spinner
+  ActivityIndicator,
 } from "react-native";
 import { useEffect, useState } from "react";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
@@ -179,6 +179,27 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </Animated.View>
 
+            {/* Favorites */}
+            <Animated.View
+              entering={FadeInDown.duration(1800)}
+              className={`flex-row items-center ${sectionBg} rounded-3xl px-5 py-4`}
+            >
+              <View className="bg-yellow-200 rounded-full p-3 mr-4 shadow-inner shadow-yellow-300">
+                <Star size={24} color="#b45309" />
+              </View>
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/home/favorite")}
+                className="flex-1 justify-center"
+              >
+                <Text className={`text-lg font-semibold ${textColor}`}>
+                  Favorites
+                </Text>
+                <Text className={`text-sm ${textColor} opacity-70`}>
+                  Bookmark shlokas you love the most
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+
             {/* Audio Recitations */}
             <Animated.View
               entering={FadeInDown.duration(1400)}
@@ -216,29 +237,6 @@ export default function HomeScreen() {
                 </Text>
                 <Text className={`text-sm ${textColor} opacity-70`}>
                   Set a daily reminder to read or reflect
-                </Text>
-              </View>
-              <View className="bg-orange-200 px-2 py-1 rounded-full">
-                <Text className="text-xs text-orange-900 font-semibold">
-                  Coming Soon
-                </Text>
-              </View>
-            </Animated.View>
-
-            {/* Favorites */}
-            <Animated.View
-              entering={FadeInDown.duration(1800)}
-              className={`flex-row items-center ${sectionBg} rounded-3xl px-5 py-4`}
-            >
-              <View className="bg-yellow-200 rounded-full p-3 mr-4 shadow-inner shadow-yellow-300">
-                <Star size={24} color="#b45309" />
-              </View>
-              <View className="flex-1">
-                <Text className={`text-lg font-semibold ${textColor}`}>
-                  Favorites
-                </Text>
-                <Text className={`text-sm ${textColor} opacity-70`}>
-                  Bookmark shlokas you love the most
                 </Text>
               </View>
               <View className="bg-orange-200 px-2 py-1 rounded-full">
