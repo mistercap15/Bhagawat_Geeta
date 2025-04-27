@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Bhagawat Gita",
-    "slug": "Bhagawat_Gita",
+    "name": "Bhagavad Gita",
+    "slug": "Bhagavad_gita",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/appLogo.jpg",
