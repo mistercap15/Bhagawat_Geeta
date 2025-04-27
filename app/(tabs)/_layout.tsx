@@ -23,6 +23,7 @@ function LayoutContent() {
     height: 60,
     paddingBottom: 10,
     paddingTop: 5,
+    borderTopWidth: 0,
   };
 
   return (

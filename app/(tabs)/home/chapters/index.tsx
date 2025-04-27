@@ -12,12 +12,17 @@ import { useCallback, useState } from "react";
 import api from "@/utils/api";
 import { useThemeStyle } from "@/hooks/useThemeStyle";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function ChaptersScreen() {
   const router = useRouter();
   const [chapters, setChapters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { textColor, bgColor, sectionBg } = useThemeStyle();
+  const { isDarkMode } = useTheme();
+  const bgColor = isDarkMode ? "bg-gray-900" : "bg-amber-50";
+  const textColor = isDarkMode ? "text-white" : "text-amber-900";
+  const sectionBg = isDarkMode ? "bg-gray-800" : "bg-white";
+  const textMeaningColor = isDarkMode ? "text-gray-400" : "text-gray-700";
 
   const fetchChapters = async () => {
     try {
@@ -33,7 +38,7 @@ export default function ChaptersScreen() {
             const isRead = await AsyncStorage.getItem(key);
             if (isRead === "true") readCount++;
           }
-  
+
           const progress = chapter.verses_count
             ? readCount / chapter.verses_count
             : 0;
@@ -70,7 +75,9 @@ export default function ChaptersScreen() {
   }
 
   return (
-    <ScrollView className={`p-2 px-6 ${bgColor}`}>
+    <ScrollView className={`p-2 px-6 ${bgColor}`}
+    contentContainerStyle={{ paddingBottom: 20}}
+    >
       <Text className={`text-2xl font-bold mb-4 ms-1 ${textColor}`}>
         📖 All Chapters
       </Text>
@@ -80,7 +87,9 @@ export default function ChaptersScreen() {
           key={chapter.chapter_number}
           className={`${sectionBg} rounded-2xl p-4 mb-4 shadow`}
           onPress={() =>
-            router.push(`/(tabs)/home/chapters/${chapter.chapter_number}/shlokas`)
+            router.push(
+              `/(tabs)/home/chapters/${chapter.chapter_number}/shlokas`
+            )
           }
         >
           <View className="flex-row items-center">
@@ -89,9 +98,14 @@ export default function ChaptersScreen() {
             </View>
             <View className="flex-1">
               <Text className={`text-lg font-semibold ${textColor}`}>
-                Chapter {chapter.chapter_number}: {chapter.transliteration}
+                Chapter {chapter.chapter_number}: {chapter.name}
               </Text>
-              <Text className="text-sm text-gray-600">{chapter.meaning.en}</Text>
+              <Text className={`text-sm ${textMeaningColor}`}>
+                {chapter.meaning.en}
+              </Text>
+              <Text className={`text-sm ${textMeaningColor}`}>
+                {chapter.meaning.hi}
+              </Text>
             </View>
           </View>
 
