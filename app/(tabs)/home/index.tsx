@@ -24,11 +24,8 @@ import * as MediaLibrary from "expo-media-library";
 import { captureRef } from "react-native-view-shot";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import {
-  BottomSheetModal,
-  BottomSheetView,
-  BottomSheetModalProvider,
-} from "@gorhom/bottom-sheet";
+import ActionSheet, { ActionSheetRef } from "react-native-actions-sheet";
+import { Dimensions } from "react-native";
 
 export default function HomeScreen() {
   const [shlokaOfTheDay, setShlokaOfTheDay] = useState<any>(null);
@@ -40,16 +37,12 @@ export default function HomeScreen() {
   const bgColor = isDarkMode ? "bg-gray-900" : "bg-amber-50";
   const textColor = isDarkMode ? "text-white" : "text-amber-900";
   const sectionBg = isDarkMode ? "bg-gray-800" : "bg-white";
-
+  const screenHeight = Dimensions.get("window").height;
   const viewRef = useRef<any>(null);
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-
-  const handlePresentModalPress = useCallback(() => {
-    bottomSheetModalRef.current?.present();
-  }, []);
-  const handleSheetChanges = useCallback((index: number) => {
-    console.log("handleSheetChanges", index);
-  }, []);
+  const actionSheetRef = useRef<ActionSheetRef>(null);
+  const handlePresentModalPress = () => {
+    actionSheetRef.current?.show();
+  };
 
   const fetchShloka = async () => {
     setLoading(true);
@@ -312,27 +305,23 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
       </View>
-
-      <BottomSheetModalProvider>
-        <BottomSheetModal
-          ref={bottomSheetModalRef}
-          onChange={handleSheetChanges}
-          snapPoints={['40%', '60%']}
-          backgroundStyle={{
-            backgroundColor: isDarkMode ? '#333' : '#f1f5f9',
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
+      <ActionSheet
+        ref={actionSheetRef}
+        gestureEnabled={true}
+        containerStyle={{
+          backgroundColor: isDarkMode ? "#1f2937" : "#ffffff",
+          minHeight: screenHeight * 0.15,
+        }}
+      >
+        <Text
+          style={{
+            color: isDarkMode ? "#ffffff" : "#1f2937",
           }}
+          className="fs-16 fw-600 text-center p-4 py-10"
         >
-          <BottomSheetView >
-            <Text
-              className={`text-lg font-semibold ${textColor} p-4`}
-            >
-              This feature is still in development. It will be available soon.
-            </Text>
-          </BottomSheetView>
-        </BottomSheetModal>
-      </BottomSheetModalProvider>
+          This feature is still in development. It will be available soon.
+        </Text>
+      </ActionSheet>
     </GestureHandlerRootView>
   );
 }
