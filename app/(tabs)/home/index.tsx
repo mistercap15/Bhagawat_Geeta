@@ -36,7 +36,7 @@ export default function HomeScreen() {
   useEffect(() => {
     setShlokaOfTheDay(shlokas[Math.floor(Math.random() * shlokas.length)]);
   }, []);
-
+console.log('shlokaOfTheDay', shlokaOfTheDay)
   return (
     <LinearGradient colors={["#fff7ed", "#fffbeb"]} className="flex-1">
       <ScrollView>
