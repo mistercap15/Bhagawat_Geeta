@@ -9,7 +9,7 @@ interface ThemedLayoutProps {
 
 export default function ThemedLayout({ children }: ThemedLayoutProps) {
   const { isDarkMode } = useTheme();
-  const bgColor = isDarkMode ? "#000" : "#fff7ed";
+  const bgColor = isDarkMode ? "#1C1B1F" : "#FFF8F1";
   const statusStyle = isDarkMode ? "light" : "dark";
 
   return (
