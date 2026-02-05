@@ -3,7 +3,6 @@ import {
   TouchableOpacity,
   View,
   Text,
-  ActivityIndicator,
 } from "react-native";
 import { BookOpen } from "lucide-react-native";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -13,6 +12,7 @@ import api from "@/utils/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "@/context/ThemeContext";
 import { LinearGradient } from "expo-linear-gradient";
+import MaterialLoader from "@/components/MaterialLoader";
 
 export default function ChaptersScreen() {
   const router = useRouter();
@@ -68,7 +68,7 @@ export default function ChaptersScreen() {
   if (loading) {
     return (
       <View className={`flex-1 justify-center items-center ${isDarkMode ? "bg-[#1C1B1F]" : "bg-[#FFF8F1]"}`}>
-        <ActivityIndicator size="large" color="#8A4D24" />
+        <MaterialLoader size="large" />
         <Text className={`mt-2 ${textColor}`}>Loading chapters...</Text>
       </View>
     );

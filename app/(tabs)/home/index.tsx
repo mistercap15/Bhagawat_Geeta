@@ -5,7 +5,6 @@ import {
   Text,
   RefreshControl,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import {
@@ -27,6 +26,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import ActionSheet, { ActionSheetRef } from "react-native-actions-sheet";
 import { Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import MaterialLoader from "@/components/MaterialLoader";
 
 export default function HomeScreen() {
   const [shlokaOfTheDay, setShlokaOfTheDay] = useState<any>(null);
@@ -161,7 +161,7 @@ export default function HomeScreen() {
               <Sparkles size={20} color={isDarkMode ? "#D0BCFF" : "#7D5260"} />
             </View>
             {loading ? (
-              <ActivityIndicator size="large" color="#8A4D24" />
+              <MaterialLoader size="large" />
             ) : error ? (
               <Text className={`text-base ${subTextColor} text-center`}>
                 No data available right now. Pull to refresh.

@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  ActivityIndicator,
   ScrollView,
   TouchableOpacity,
   Switch,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react-native";
 import api from "@/utils/api";
 import { useTheme } from "@/context/ThemeContext";
+import MaterialLoader from "@/components/MaterialLoader";
 import { ProgressBar } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -94,7 +94,7 @@ export default function VerseDetails() {
   if (loading) {
     return (
       <View className={`flex-1 justify-center items-center ${bgColor}`}>
-        <ActivityIndicator size="large" color="#f59e0b" />
+        <MaterialLoader size="large" />
         <Text className={`mt-2 ${textColor}`}>Loading verse...</Text>
       </View>
     );

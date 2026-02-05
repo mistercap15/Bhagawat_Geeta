@@ -3,13 +3,13 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
 import { useCallback, useState } from "react";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import api from "@/utils/api";
 import { useTheme } from "@/context/ThemeContext";
+import MaterialLoader from "@/components/MaterialLoader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CheckCircle } from "lucide-react-native";
 
@@ -64,7 +64,7 @@ export default function ShlokasScreen() {
   if (loading || !chapter) {
     return (
       <View className={`flex-1 justify-center items-center ${isDarkMode ? "bg-[#1C1B1F]" : "bg-[#FFF8F1]"}`}>
-        <ActivityIndicator size="large" color="#8A4D24" />
+        <MaterialLoader size="large" />
         <Text className={`mt-2 ${textColor}`}>Loading chapter...</Text>
       </View>
     );
