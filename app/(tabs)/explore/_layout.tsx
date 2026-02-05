@@ -4,17 +4,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import ThemedLayout from "@/components/ThemedLayout";
 
-export default function HomeLayout() {
+export default function ExploreLayout() {
   const { isDarkMode } = useTheme();
 
   const headerBg = isDarkMode ? "#1f2937" : "#fff7ed";
   const headerText = isDarkMode ? "#facc15" : "#92400e";
-  const bgColor = isDarkMode ? "#000" : "#fff7ed";
 
   return (
     <ThemedLayout>
       <Stack
         screenOptions={{
+          headerShown: true,
           headerStyle: { backgroundColor: headerBg },
           headerTitleStyle: { color: headerText },
           headerTintColor: headerText,
@@ -22,23 +22,21 @@ export default function HomeLayout() {
           headerTitleAlign: "center",
         }}
       >
+        <Stack.Screen name="index" options={{ title: "Explore" }} />
         <Stack.Screen
-          name="index"
-          options={{ title: "Home", headerShown: false }}
-        />
-        <Stack.Screen name="chapters/index" options={{ title: "Chapters" }} />
-        <Stack.Screen
-          name="chapters/[id]/shlokas"
-          options={{ title: "Shlokas" }}
+          name="termsCondition"
+          options={{ title: "Terms & Conditions" }}
         />
         <Stack.Screen
-          name="chapters/[id]/[verse_id]"
-          options={{ title: "Shloka Details" }}
+          name="privacyPolicy"
+          options={{ title: "Privacy Policy" }}
         />
         <Stack.Screen
-          name="favorite/index"
-          options={{ title: "Favorites" }}
-          />
+          name="contactSupport"
+          options={{ title: "Contact Support" }}
+        />
+        <Stack.Screen name="rateApp" options={{ title: "Rate App" }} />
+        <Stack.Screen name="about" options={{ title: "About US" }} />
       </Stack>
     </ThemedLayout>
   );

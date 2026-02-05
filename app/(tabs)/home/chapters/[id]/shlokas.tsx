@@ -5,32 +5,48 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { useEffect, useState } from "react";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { Star } from "lucide-react-native";
 import api from "@/utils/api";
+import { useTheme } from "@/context/ThemeContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CheckCircle } from "lucide-react-native";
 
 export default function ShlokasScreen() {
   const { id } = useLocalSearchParams();
   const [chapter, setChapter] = useState<any>(null);
   const [verses, setVerses] = useState<any[]>([]);
-  const [favorites, setFavorites] = useState<boolean[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { isDarkMode } = useTheme();
+
+  const bgColor = isDarkMode ? "bg-gray-900" : "bg-amber-50";
+  const textColor = isDarkMode ? "text-white" : "text-amber-900";
+  const sectionBg = isDarkMode ? "bg-gray-800" : "bg-white";
+  const secondaryText = isDarkMode ? "text-gray-400" : "text-gray-600";
+  const [readVerses, setReadVerses] = useState<Set<number>>(new Set());
 
   const fetchChapterData = async () => {
     try {
       const chapterRes = await api.get(`/chapter/${id}/`);
-
       const versesCount = chapterRes.data.verses_count;
-      const versesList = Array.from({ length: versesCount }, (_, index) => ({
-        verse_number: index + 1,
-      }));
+      const readSet = new Set<number>();
+      for (let i = 1; i <= versesCount; i++) {
+        const key = `read_verse_${chapterRes.data.chapter_number}_${i}`;
+        const isRead = await AsyncStorage.getItem(key);
+        if (isRead === "true") {
+          readSet.add(i);
+        }
+      }
 
+      setReadVerses(readSet);
       setChapter(chapterRes.data);
-      setVerses(versesList);
-      setFavorites(new Array(versesCount).fill(false));
+      setVerses(
+        Array.from({ length: versesCount }, (_, index) => ({
+          verse_number: index + 1,
+        }))
+      );
     } catch (error) {
       console.error("Error fetching chapter or verses:", error);
     } finally {
@@ -38,76 +54,85 @@ export default function ShlokasScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchChapterData();
-  }, [id]);
-
-  const toggleFavorite = (index: number) => {
-    const updated = [...favorites];
-    updated[index] = !updated[index];
-    setFavorites(updated);
-  };
+  useFocusEffect(
+    useCallback(() => {
+      fetchChapterData();
+    }, [id])
+  );
 
   if (loading || !chapter) {
     return (
-      <View className="flex-1 justify-center items-center bg-[#fff7ed]">
+      <View className={`flex-1 justify-center items-center ${bgColor}`}>
         <ActivityIndicator size="large" color="#f59e0b" />
-        <Text className="mt-2 text-amber-900">Loading chapter...</Text>
+        <Text className={`mt-2 ${textColor}`}>Loading chapter...</Text>
       </View>
     );
   }
 
   return (
-    <LinearGradient colors={["#fff7ed", "#fffbeb"]} className="flex-1">
-      <ScrollView className="px-6 py-4">
-        <View className="mb-6 p-5 bg-white rounded-2xl shadow">
-          <Text className="text-2xl font-bold text-amber-900 mb-1">
-            📖 Chapter {chapter.chapter_number}: {chapter.transliteration}
+    <LinearGradient
+      colors={isDarkMode ? ["#111827", "#1f2937"] : ["#fff7ed", "#fefce8"]}
+      className="flex-1"
+    >
+      <ScrollView
+        className={`px-6 pt-6 ${bgColor}`}
+        contentContainerStyle={{ paddingBottom: 25 }}
+      >
+        <View
+          className={`mb-8 p-6 rounded-3xl ${sectionBg} shadow-md`}
+          style={{
+            shadowColor: isDarkMode ? "#000" : "#fbbf24",
+            shadowOpacity: 0.1,
+            shadowOffset: { width: 0, height: 3 },
+            shadowRadius: 10,
+            elevation: 4,
+          }}
+        >
+          <Text className={`text-3xl font-bold mb-2 ${textColor}`}>
+            📖 अध्याय {chapter.chapter_number}: {chapter.transliteration}
           </Text>
-          <Text className="text-base text-gray-700 italic mb-3">
-            "{chapter.meaning.en}"
+          <Text className={`italic mb-4 text-[15px] ${secondaryText}`}>
+            “{chapter.meaning.en}”
           </Text>
-          <Text className="text-gray-800 leading-relaxed text-[16px]">
+          <Text className={`leading-relaxed text-[16px] ${textColor}`}>
             {chapter.summary.en}
           </Text>
         </View>
 
-        {verses.map((verse, index) => (
-          <View
+        {/* Verse List */}
+        {verses.map((verse) => (
+          <TouchableOpacity
             key={verse.verse_number}
-            className="bg-white rounded-2xl p-5 mb-5 shadow"
+            onPress={() =>
+              router.push(
+                `/home/chapters/${id}/${verse.verse_number}?verses_count=${chapter.verses_count}`
+              )
+            }
+            className={`rounded-2xl p-5 mb-4 shadow ${sectionBg}`}
+            style={{
+              shadowColor: isDarkMode ? "#000" : "#fbbf24",
+              shadowOpacity: 0.05,
+              shadowOffset: { width: 0, height: 2 },
+              shadowRadius: 8,
+              elevation: 2,
+            }}
           >
-            <TouchableOpacity
-              onPress={() =>
-                router.push(
-                  `/home/chapters/${id}/${verse.verse_number}?verses_count=${chapter.verses_count}`
-                )
-              }
-              className="text-amber-900"
-            >
-              <View className="border-l-4 border-amber-500 pl-4">
-                <Text className="text-lg font-semibold text-amber-900 mb-2">
+            <View className="flex-row justify-between items-center">
+              <View className="border-l-4 border-amber-500 pl-4 flex-1">
+                <Text className={`text-lg font-semibold mb-2 ${textColor}`}>
                   Verse {verse.verse_number}
                 </Text>
+                <Text className={`text-base ${textColor}`}>
+                  श्लोक {verse.verse_number}
+                </Text>
               </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="flex-row items-center mt-4"
-              onPress={() => toggleFavorite(index)}
-            >
-              <Star
-                size={24}
-                color={favorites[index] ? "#f59e0b" : "#d1d5db"}
-              />
-              <Text className="ml-2 text-amber-900 font-medium">
-                {favorites[index] ? "Added to Favorites" : "Add to Favorites"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+              {readVerses.has(verse.verse_number) && (
+                <CheckCircle size={22} color="#22c55e" className="ml-2" />
+              )}
+            </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </LinearGradient>
   );
 }
-  
