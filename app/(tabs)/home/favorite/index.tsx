@@ -1,15 +1,18 @@
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
-import api from "@/utils/api";
+import { getSlok } from "@/utils/gitaData";
+import MaterialLoader from "@/components/MaterialLoader";
+import { useScrollTabBar } from "@/hooks/useScrollTabBar";
 
 export default function FavoritesScreen() {
   const [favorites, setFavorites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { isDarkMode } = useTheme();
+  const handleScroll = useScrollTabBar();
 
   const bgColor = isDarkMode ? "bg-gray-900" : "bg-amber-50";
   const textColor = isDarkMode ? "text-white" : "text-amber-900";
@@ -23,7 +26,7 @@ export default function FavoritesScreen() {
         const favVerseInfos:any = favKeys.map((key) => key.split("_").slice(2));
         
         const fetches = favVerseInfos.map(([chapter, verse]:any) =>
-          api.get(`/slok/${chapter}/${verse}`).then(res => res.data)
+          getSlok(chapter, verse)
         );
 
         const results = await Promise.all(fetches);
@@ -41,7 +44,7 @@ export default function FavoritesScreen() {
   if (loading) {
     return (
       <View className={`flex-1 justify-center items-center ${bgColor}`}>
-        <ActivityIndicator size="large" color="#f59e0b" />
+        <MaterialLoader size="large" />
         <Text className={`mt-2 ${textColor}`}>Loading favorites...</Text>
       </View>
     );
@@ -56,7 +59,11 @@ export default function FavoritesScreen() {
   }
 
   return (
-    <ScrollView className={`flex-1 p-4 ${bgColor}`}>
+    <ScrollView
+      className={`flex-1 p-4 ${bgColor}`}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
+    >
       {favorites.map((verse, index) => (
         <TouchableOpacity
           key={index}
