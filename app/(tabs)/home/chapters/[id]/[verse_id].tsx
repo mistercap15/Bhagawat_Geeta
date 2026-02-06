@@ -24,14 +24,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function VerseDetails() {
   const { id, verse_id, verses_count } = useLocalSearchParams();
+
   const [verse, setVerse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [currentVerseId, setCurrentVerseId] = useState(parseInt(verse_id as string));
+  const [currentVerseId, setCurrentVerseId] = useState(
+    parseInt(verse_id as string)
+  );
   const [isFavorite, setIsFavorite] = useState(false);
   const [isRead, setIsRead] = useState(false);
 
   const { isDarkMode } = useTheme();
   const versesCount = parseInt(verses_count as string);
+
+  const swipeX = useRef(new Animated.Value(0)).current;
 
   const palette = useMemo(
     () => ({
@@ -51,13 +56,17 @@ export default function VerseDetails() {
       const response = await api.get(`/slok/${chapterId}/${verseId}`);
       setVerse(response.data);
 
-      const favoriteStatus = await AsyncStorage.getItem(`favorite_verse_${chapterId}_${verseId}`);
-      setIsFavorite(favoriteStatus === "true");
+      const fav = await AsyncStorage.getItem(
+        `favorite_verse_${chapterId}_${verseId}`
+      );
+      const read = await AsyncStorage.getItem(
+        `read_verse_${chapterId}_${verseId}`
+      );
 
-      const readStatus = await AsyncStorage.getItem(`read_verse_${chapterId}_${verseId}`);
-      setIsRead(readStatus === "true");
-    } catch (error) {
-      console.error("Error fetching verse details:", error);
+      setIsFavorite(fav === "true");
+      setIsRead(read === "true");
+    } catch (err) {
+      console.error("Verse fetch error:", err);
     } finally {
       setLoading(false);
     }
@@ -68,66 +77,83 @@ export default function VerseDetails() {
     fetchVerseData(id as string, currentVerseId);
   }, [id, currentVerseId]);
 
-  const goToPrevious = () => {
-    if (currentVerseId > 1) {
-      setCurrentVerseId(currentVerseId - 1);
-    }
-  };
+  const animateAndGo = (direction: "next" | "prev") => {
+    const toValue = direction === "next" ? -350 : 350;
 
-  const goToNext = () => {
-    if (currentVerseId < versesCount) {
-      setCurrentVerseId(currentVerseId + 1);
-    }
+    Animated.timing(swipeX, {
+      toValue,
+      duration: 180,
+      useNativeDriver: true,
+    }).start(() => {
+      swipeX.setValue(0);
+      setCurrentVerseId((prev) =>
+        direction === "next" ? prev + 1 : prev - 1
+      );
+    });
   };
-
-  const toggleFavorite = async () => {
-    const newFavoriteStatus = !isFavorite;
-    setIsFavorite(newFavoriteStatus);
-    if (newFavoriteStatus) {
-      await AsyncStorage.setItem(`favorite_verse_${id}_${currentVerseId}`, "true");
-    } else {
-      await AsyncStorage.removeItem(`favorite_verse_${id}_${currentVerseId}`);
-    }
-  };
-
-  const toggleRead = async () => {
-    const newReadStatus = !isRead;
-    setIsRead(newReadStatus);
-    await AsyncStorage.setItem(`read_verse_${id}_${currentVerseId}`, newReadStatus.toString());
-  };
-
-  const swipeX = useRef(new Animated.Value(0)).current;
 
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gesture) =>
-          Math.abs(gesture.dx) > 14 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
-        onPanResponderMove: (_, gesture) => {
-          swipeX.setValue(gesture.dx);
+        onMoveShouldSetPanResponder: (_, g) =>
+          Math.abs(g.dx) > 14 && Math.abs(g.dx) > Math.abs(g.dy),
+
+        onPanResponderMove: (_, g) => {
+          swipeX.setValue(g.dx);
         },
-        onPanResponderRelease: (_, gesture) => {
+
+        onPanResponderRelease: (_, g) => {
           const threshold = 70;
-          if (gesture.dx < -threshold) {
-            goToNext();
-          } else if (gesture.dx > threshold) {
-            goToPrevious();
+
+          if (g.dx < -threshold && currentVerseId < versesCount) {
+            animateAndGo("next");
+          } else if (g.dx > threshold && currentVerseId > 1) {
+            animateAndGo("prev");
+          } else {
+            Animated.spring(swipeX, {
+              toValue: 0,
+              friction: 8,
+              useNativeDriver: true,
+            }).start();
           }
-          Animated.spring(swipeX, {
-            toValue: 0,
-            useNativeDriver: true,
-            friction: 8,
-          }).start();
         },
       }),
     [currentVerseId, versesCount]
   );
 
+  const toggleFavorite = async () => {
+    const next = !isFavorite;
+    setIsFavorite(next);
+
+    if (next) {
+      await AsyncStorage.setItem(
+        `favorite_verse_${id}_${currentVerseId}`,
+        "true"
+      );
+    } else {
+      await AsyncStorage.removeItem(
+        `favorite_verse_${id}_${currentVerseId}`
+      );
+    }
+  };
+
+  const toggleRead = async () => {
+    const next = !isRead;
+    setIsRead(next);
+    await AsyncStorage.setItem(
+      `read_verse_${id}_${currentVerseId}`,
+      next.toString()
+    );
+  };
+
   if (loading) {
     return (
-      <LinearGradient colors={palette.gradient as [string, string]} className="flex-1 justify-center items-center">
+      <LinearGradient
+        colors={palette.gradient as [string, string]}
+        className="flex-1 items-center justify-center"
+      >
         <MaterialLoader size="large" />
-        <Text style={{ color: palette.text }} className="mt-2 text-base">
+        <Text style={{ color: palette.text }} className="mt-2">
           Opening your verse...
         </Text>
       </LinearGradient>
@@ -135,105 +161,115 @@ export default function VerseDetails() {
   }
 
   return (
-    <LinearGradient colors={palette.gradient as [string, string]} className="flex-1">
-      <ScrollView className="px-5 pt-5" contentContainerStyle={{ paddingBottom: 110 }}>
+    <LinearGradient
+      colors={palette.gradient as [string, string]}
+      className="flex-1"
+    >
+      <ScrollView className="px-5 pt-5" contentContainerStyle={{ paddingBottom: 120 }}>
         <View className="items-center mb-4">
-          <BookOpenText color={palette.accent} size={26} />
+          <BookOpenText size={26} color={palette.accent} />
           <Text style={{ color: palette.accent }} className="mt-1 font-semibold">
             Chapter {verse.chapter} · Verse {currentVerseId}
           </Text>
           <Text style={{ color: palette.muted }} className="text-xs mt-1">
-            Swipe left/right on the verse card to move between shlokas
+            Swipe left or right to change verse
           </Text>
         </View>
 
         <Animated.View
           {...panResponder.panHandlers}
-          style={{ transform: [{ translateX: swipeX }] }}
-          className="rounded-[28px] p-5"
+          style={{
+            transform: [{ translateX: swipeX }],
+            opacity: swipeX.interpolate({
+              inputRange: [-300, 0, 300],
+              outputRange: [0.7, 1, 0.7],
+            }),
+          }}
+          className="rounded-[28px]"
         >
           <View
             style={{ backgroundColor: palette.page, borderColor: palette.pageBorder }}
-            className="rounded-[28px] border p-6"
+            className="border rounded-[28px] p-6"
           >
-            <Text style={{ color: palette.accent }} className="text-xs tracking-[1.5px] uppercase font-semibold mb-2">
+            <Text style={{ color: palette.accent }} className="text-xs uppercase font-semibold mb-2">
               Sanskrit
             </Text>
             <Text style={{ color: palette.text }} className="text-[25px] leading-10 font-semibold mb-6">
               {verse.slok}
             </Text>
 
-            <View style={{ backgroundColor: isDarkMode ? "#312C3A" : "#FDF2E5" }} className="rounded-2xl p-4 mb-4">
-              <Text style={{ color: palette.accent }} className="text-sm font-semibold mb-1">
+            <View className="rounded-2xl p-4 mb-4" style={{ backgroundColor: isDarkMode ? "#312C3A" : "#FDF2E5" }}>
+              <Text style={{ color: palette.accent }} className="font-semibold mb-1">
                 हिंदी भावार्थ
               </Text>
-              <Text style={{ color: palette.text }} className="text-base leading-7">
+              <Text style={{ color: palette.text }} className="leading-7">
                 {verse.tej.ht}
               </Text>
             </View>
 
-            <View style={{ backgroundColor: isDarkMode ? "#312C3A" : "#FDF2E5" }} className="rounded-2xl p-4">
-              <Text style={{ color: palette.accent }} className="text-sm font-semibold mb-1">
+            <View className="rounded-2xl p-4" style={{ backgroundColor: isDarkMode ? "#312C3A" : "#FDF2E5" }}>
+              <Text style={{ color: palette.accent }} className="font-semibold mb-1">
                 English Meaning
               </Text>
-              <Text style={{ color: palette.text }} className="text-base leading-7">
+              <Text style={{ color: palette.text }} className="leading-7">
                 {verse.siva.et}
               </Text>
             </View>
           </View>
         </Animated.View>
 
-        <View className="flex-row mt-5 gap-3">
+        <View className="flex-row gap-3 mt-5">
           <TouchableOpacity
             onPress={toggleFavorite}
-            style={{ backgroundColor: palette.buttonBg, borderColor: palette.pageBorder }}
-            className="flex-1 border rounded-2xl px-4 py-3 flex-row items-center justify-center"
+            style={{ backgroundColor: palette.buttonBg }}
+            className="flex-1 rounded-2xl px-4 py-3 flex-row items-center justify-center"
           >
-            <Heart color={isFavorite ? "#E11D48" : palette.muted} size={20} />
-            <Text style={{ color: palette.text }} className="ml-2 font-medium">
+            <Heart size={20} color={isFavorite ? "#E11D48" : palette.muted} />
+            <Text style={{ color: palette.text }} className="ml-2">
               {isFavorite ? "Favorited" : "Favorite"}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={toggleRead}
-            style={{ backgroundColor: palette.buttonBg, borderColor: palette.pageBorder }}
-            className="flex-1 border rounded-2xl px-4 py-3 flex-row items-center justify-center"
+            style={{ backgroundColor: palette.buttonBg }}
+            className="flex-1 rounded-2xl px-4 py-3 flex-row items-center justify-center"
           >
-            {isRead ? <CheckSquare color="#5BB974" size={20} /> : <Square color={palette.muted} size={20} />}
-            <Text style={{ color: palette.text }} className="ml-2 font-medium">
+            {isRead ? (
+              <CheckSquare size={20} color="#5BB974" />
+            ) : (
+              <Square size={20} color={palette.muted} />
+            )}
+            <Text style={{ color: palette.text }} className="ml-2">
               {isRead ? "Read" : "Mark Read"}
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      <View style={{ backgroundColor: isDarkMode ? "#2B2930" : "#FFFDF9", borderColor: palette.pageBorder }} className="absolute bottom-0 left-0 right-0 px-5 pt-3 pb-6 border-t">
-        <View className="flex-row items-center justify-between">
+      <View
+        className="absolute bottom-0 left-0 right-0 px-5 py-5 border-t"
+        style={{ backgroundColor: palette.buttonBg, borderColor: palette.pageBorder }}
+      >
+        <View className="flex-row justify-between items-center">
           <TouchableOpacity
-            onPress={goToPrevious}
             disabled={currentVerseId <= 1}
-            style={{
-              backgroundColor: palette.buttonBg,
-              opacity: currentVerseId <= 1 ? 0.4 : 1,
-            }}
+            onPress={() => animateAndGo("prev")}
             className="w-11 h-11 rounded-full items-center justify-center"
+            style={{ opacity: currentVerseId <= 1 ? 0.4 : 1 }}
           >
             <ChevronLeft color={palette.accent} size={24} />
           </TouchableOpacity>
 
-          <Text style={{ color: palette.text }} className="text-base font-semibold">
+          <Text style={{ color: palette.text }} className="font-semibold">
             {currentVerseId} / {versesCount}
           </Text>
 
           <TouchableOpacity
-            onPress={goToNext}
             disabled={currentVerseId >= versesCount}
-            style={{
-              backgroundColor: palette.buttonBg,
-              opacity: currentVerseId >= versesCount ? 0.4 : 1,
-            }}
+            onPress={() => animateAndGo("next")}
             className="w-11 h-11 rounded-full items-center justify-center"
+            style={{ opacity: currentVerseId >= versesCount ? 0.4 : 1 }}
           >
             <ChevronRight color={palette.accent} size={24} />
           </TouchableOpacity>
