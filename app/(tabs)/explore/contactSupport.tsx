@@ -1,26 +1,35 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Linking } from 'react-native';
-import { useThemeStyle } from '@/hooks/useThemeStyle';
-import { useTheme } from '@/context/ThemeContext';
+import React, { useEffect } from "react";
+import { View, Text, TouchableOpacity, Linking } from "react-native";
+import { useTheme } from "@/context/ThemeContext";
+import { LinearGradient } from "expo-linear-gradient";
+import { useTabBarVisibility } from "@/context/TabBarVisibilityContext";
 
 const ContactSupport = () => {
   const { isDarkMode } = useTheme();
-  const bgColor = isDarkMode ? 'bg-gray-900' : 'bg-amber-50';
-  const textColor = isDarkMode ? 'text-white' : 'text-amber-900';
-  const sectionBg = isDarkMode ? 'bg-gray-800' : 'bg-white';
+  const { setVisible } = useTabBarVisibility();
+  const subTextColor = isDarkMode ? "text-[#CAC4D0]" : "text-[#625B71]";
+
+  useEffect(() => {
+    setVisible(true);
+  }, [setVisible]);
 
   return (
-    <View className={`flex-1 ${bgColor} justify-center items-center px-6`}>
-      <Text className={`text-base mb-4 ${textColor}`}>
-        For questions, suggestions, or bug reports, feel free to reach out.
-      </Text>
-      <TouchableOpacity
-        onPress={() => Linking.openURL('mailto:khilanpatel15@gmail.com')}
-        className="bg-yellow-500 px-4 py-3 rounded-xl"
-      >
-        <Text className="text-white font-semibold">Email Support</Text>
-      </TouchableOpacity>
-    </View>
+    <LinearGradient
+      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      className="flex-1"
+    >
+      <View className="flex-1 justify-center items-center px-6">
+        <Text className={`text-base mb-4 text-center ${subTextColor}`}>
+          For questions, suggestions, or bug reports, feel free to reach out.
+        </Text>
+        <TouchableOpacity
+          onPress={() => Linking.openURL("mailto:khilanpatel15@gmail.com")}
+          className="bg-[#8A4D24] px-5 py-3 rounded-2xl"
+        >
+          <Text className="text-white font-semibold">Email Support</Text>
+        </TouchableOpacity>
+      </View>
+    </LinearGradient>
   );
 };
 

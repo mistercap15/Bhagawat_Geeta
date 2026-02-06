@@ -1,22 +1,19 @@
 import { useTheme } from "@/context/ThemeContext";
 import { Stack } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 import ThemedLayout from "@/components/ThemedLayout";
 
 export default function HomeLayout() {
   const { isDarkMode } = useTheme();
 
-  const headerBg = isDarkMode ? "#1f2937" : "#fff7ed";
-  const headerText = isDarkMode ? "#facc15" : "#92400e";
-  const bgColor = isDarkMode ? "#000" : "#fff7ed";
+  const headerBg = isDarkMode ? "#2B2930" : "#FFFDF9";
+  const headerText = isDarkMode ? "#FFB59D" : "#8A4D24";
 
   return (
     <ThemedLayout>
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: headerBg },
-          headerTitleStyle: { color: headerText },
+          headerTitleStyle: { color: headerText, fontWeight: "700" },
           headerTintColor: headerText,
           animation: "ios_from_right",
           headerTitleAlign: "center",
