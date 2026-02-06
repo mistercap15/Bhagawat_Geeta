@@ -1,52 +1,48 @@
-import * as FileSystem from "expo-file-system";
-import api from "@/utils/api";
+import gitaData from "@/data/gita.json";
 
-const CACHE_DIR = `${FileSystem.documentDirectory}gita-cache/`;
-
-const ensureCacheDir = async () => {
-  const dirInfo = await FileSystem.getInfoAsync(CACHE_DIR);
-  if (!dirInfo.exists) {
-    await FileSystem.makeDirectoryAsync(CACHE_DIR, { intermediates: true });
-  }
+type GitaChapter = {
+  chapter_number: number;
+  name: string;
+  transliteration: string;
+  meaning: {
+    en: string;
+    hi: string;
+  };
+  summary: {
+    en: string;
+  };
+  verses_count: number;
 };
 
-const readCache = async <T>(key: string): Promise<T | null> => {
-  await ensureCacheDir();
-  const path = `${CACHE_DIR}${key}.json`;
-  const fileInfo = await FileSystem.getInfoAsync(path);
-  if (!fileInfo.exists) return null;
-  const raw = await FileSystem.readAsStringAsync(path);
-  return JSON.parse(raw) as T;
+type GitaSlok = {
+  chapter: number;
+  verse: number;
+  slok: string;
+  siva: {
+    et: string;
+  };
+  tej: {
+    ht: string;
+  };
 };
 
-const writeCache = async (key: string, data: unknown) => {
-  await ensureCacheDir();
-  const path = `${CACHE_DIR}${key}.json`;
-  await FileSystem.writeAsStringAsync(path, JSON.stringify(data));
+type GitaPayload = {
+  chapters: GitaChapter[];
+  sloks: Record<string, GitaSlok>;
 };
+
+const payload = gitaData as GitaPayload;
 
 export const getChapters = async () => {
-  const cached = await readCache<any[]>("chapters");
-  if (cached) return cached;
-  const response = await api.get("/chapters");
-  await writeCache("chapters", response.data);
-  return response.data;
+  return payload.chapters;
 };
 
 export const getChapter = async (chapterId: string | number) => {
-  const cacheKey = `chapter-${chapterId}`;
-  const cached = await readCache<any>(cacheKey);
-  if (cached) return cached;
-  const response = await api.get(`/chapter/${chapterId}/`);
-  await writeCache(cacheKey, response.data);
-  return response.data;
+  const chapterNumber = Number(chapterId);
+  return payload.chapters.find((chapter) => chapter.chapter_number === chapterNumber) ?? null;
 };
 
 export const getSlok = async (chapterId: string | number, verseId: string | number) => {
-  const cacheKey = `slok-${chapterId}-${verseId}`;
-  const cached = await readCache<any>(cacheKey);
-  if (cached) return cached;
-  const response = await api.get(`/slok/${chapterId}/${verseId}`);
-  await writeCache(cacheKey, response.data);
-  return response.data;
+  const key = `${chapterId}-${verseId}`;
+  return payload.sloks[key] ?? null;
 };

@@ -19,6 +19,7 @@ export default function ShlokasScreen() {
   const [chapter, setChapter] = useState<any>(null);
   const [verses, setVerses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const handleScroll = useScrollTabBar();
@@ -29,8 +30,12 @@ export default function ShlokasScreen() {
   const borderColor = isDarkMode ? "#4A4458" : "#E8D5C4";
 
   const fetchChapterData = async () => {
+    setError(false);
     try {
       const chapterData = await getChapter(id as string);
+      if (!chapterData) {
+        throw new Error("Chapter not found in local data");
+      }
       const versesCount = chapterData.verses_count;
       const readSet = new Set<number>();
       for (let i = 1; i <= versesCount; i++) {
@@ -50,6 +55,7 @@ export default function ShlokasScreen() {
       );
     } catch (error) {
       console.error("Error fetching chapter or verses:", error);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -67,7 +73,9 @@ export default function ShlokasScreen() {
     return (
       <View className={`flex-1 justify-center items-center ${isDarkMode ? "bg-[#1C1B1F]" : "bg-[#FFF8F1]"}`}>
         <MaterialLoader size="large" />
-        <Text className={`mt-2 ${textColor}`}>Loading chapter...</Text>
+        <Text className={`mt-2 ${textColor}`}>
+          {error ? "Missing local chapter data." : "Loading chapter..."}
+        </Text>
       </View>
     );
   }

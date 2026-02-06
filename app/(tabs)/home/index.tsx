@@ -76,6 +76,9 @@ export default function HomeScreen() {
       Math.floor(Math.random() * versesCount[randomChapter]) + 1;
     try {
       const slokaData = await getSlok(randomChapter, randomVerse);
+      if (!slokaData) {
+        throw new Error("Shloka not found in local data");
+      }
       setShlokaOfTheDay({
         chapter: slokaData.chapter,
         verse: slokaData.verse,

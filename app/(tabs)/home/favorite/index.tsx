@@ -30,7 +30,7 @@ export default function FavoritesScreen() {
         );
 
         const results = await Promise.all(fetches);
-        setFavorites(results);
+        setFavorites(results.filter(Boolean));
       } catch (error) {
         console.error("Error loading favorites:", error);
       } finally {

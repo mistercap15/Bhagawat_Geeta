@@ -27,6 +27,7 @@ export default function VerseDetails() {
   const { id, verse_id, verses_count } = useLocalSearchParams();
   const [verse, setVerse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [currentVerseId, setCurrentVerseId] = useState(parseInt(verse_id as string));
   const [isFavorite, setIsFavorite] = useState(false);
   const [isRead, setIsRead] = useState(false);
@@ -34,6 +35,8 @@ export default function VerseDetails() {
   const { isDarkMode } = useTheme();
   const handleScroll = useScrollTabBar();
   const versesCount = parseInt(verses_count as string);
+
+  const swipeX = useRef(new Animated.Value(0)).current;
 
   const palette = useMemo(
     () => ({
@@ -49,8 +52,12 @@ export default function VerseDetails() {
   );
 
   const fetchVerseData = async (chapterId: string, verseId: number) => {
+    setError(false);
     try {
       const slokData = await getSlok(chapterId, verseId);
+      if (!slokData) {
+        throw new Error("Shloka not found in local data");
+      }
       setVerse(slokData);
 
       const favoriteStatus = await AsyncStorage.getItem(`favorite_verse_${chapterId}_${verseId}`);
@@ -60,6 +67,7 @@ export default function VerseDetails() {
       setIsRead(readStatus === "true");
     } catch (error) {
       console.error("Error fetching verse details:", error);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -69,6 +77,10 @@ export default function VerseDetails() {
     setLoading(true);
     fetchVerseData(id as string, currentVerseId);
   }, [id, currentVerseId]);
+
+  useEffect(() => {
+    swipeX.setValue(0);
+  }, [currentVerseId, swipeX]);
 
   const goToPrevious = () => {
     if (currentVerseId > 1) {
@@ -98,7 +110,7 @@ export default function VerseDetails() {
     await AsyncStorage.setItem(`read_verse_${id}_${currentVerseId}`, newReadStatus.toString());
   };
 
-  const swipeX = useRef(new Animated.Value(0)).current;
+
 
   const panResponder = useMemo(
     () =>
@@ -111,8 +123,10 @@ export default function VerseDetails() {
         onPanResponderRelease: (_, gesture) => {
           const threshold = 70;
           if (gesture.dx < -threshold) {
+            swipeX.setValue(0);
             goToNext();
           } else if (gesture.dx > threshold) {
+            swipeX.setValue(0);
             goToPrevious();
           }
           Animated.spring(swipeX, {
@@ -130,7 +144,7 @@ export default function VerseDetails() {
       <LinearGradient colors={palette.gradient as [string, string]} className="flex-1 justify-center items-center">
         <MaterialLoader size="large" />
         <Text style={{ color: palette.text }} className="mt-2 text-base">
-          Opening your verse...
+          {error ? "Missing local shloka data." : "Opening your verse..."}
         </Text>
       </LinearGradient>
     );
