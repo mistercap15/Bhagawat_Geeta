@@ -1,9 +1,10 @@
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import api from "@/utils/api";
+import MaterialLoader from "@/components/MaterialLoader";
 
 export default function FavoritesScreen() {
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -41,7 +42,7 @@ export default function FavoritesScreen() {
   if (loading) {
     return (
       <View className={`flex-1 justify-center items-center ${bgColor}`}>
-        <ActivityIndicator size="large" color="#f59e0b" />
+        <MaterialLoader size="large" />
         <Text className={`mt-2 ${textColor}`}>Loading favorites...</Text>
       </View>
     );

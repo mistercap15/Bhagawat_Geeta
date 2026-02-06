@@ -3,13 +3,13 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import api from "@/utils/api";
 import { useTheme } from "@/context/ThemeContext";
+import MaterialLoader from "@/components/MaterialLoader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CheckCircle } from "lucide-react-native";
 
@@ -21,11 +21,10 @@ export default function ShlokasScreen() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
 
-  const bgColor = isDarkMode ? "bg-gray-900" : "bg-amber-50";
-  const textColor = isDarkMode ? "text-white" : "text-amber-900";
-  const sectionBg = isDarkMode ? "bg-gray-800" : "bg-white";
-  const secondaryText = isDarkMode ? "text-gray-400" : "text-gray-600";
-  const [readVerses, setReadVerses] = useState<Set<number>>(new Set());
+  const textColor = isDarkMode ? "text-[#E8DEF8]" : "text-[#3E2723]";
+  const sectionBg = isDarkMode ? "bg-[#2B2930]" : "bg-[#FFFDF9]";
+  const secondaryText = isDarkMode ? "text-[#CAC4D0]" : "text-[#625B71]";
+  const borderColor = isDarkMode ? "#4A4458" : "#E8D5C4";
 
   const fetchChapterData = async () => {
     try {
@@ -54,6 +53,8 @@ export default function ShlokasScreen() {
     }
   };
 
+  const [readVerses, setReadVerses] = useState<Set<number>>(new Set());
+
   useFocusEffect(
     useCallback(() => {
       fetchChapterData();
@@ -62,8 +63,8 @@ export default function ShlokasScreen() {
 
   if (loading || !chapter) {
     return (
-      <View className={`flex-1 justify-center items-center ${bgColor}`}>
-        <ActivityIndicator size="large" color="#f59e0b" />
+      <View className={`flex-1 justify-center items-center ${isDarkMode ? "bg-[#1C1B1F]" : "bg-[#FFF8F1]"}`}>
+        <MaterialLoader size="large" />
         <Text className={`mt-2 ${textColor}`}>Loading chapter...</Text>
       </View>
     );
@@ -71,21 +72,15 @@ export default function ShlokasScreen() {
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#111827", "#1f2937"] : ["#fff7ed", "#fefce8"]}
+      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
       className="flex-1"
     >
-      <ScrollView
-        className={`px-6 pt-6 ${bgColor}`}
-        contentContainerStyle={{ paddingBottom: 25 }}
-      >
+      <ScrollView className="px-6 pt-6" contentContainerStyle={{ paddingBottom: 90 }}>
         <View
-          className={`mb-8 p-6 rounded-3xl ${sectionBg} shadow-md`}
+          className={`mb-8 p-6 rounded-3xl ${sectionBg}`}
           style={{
-            shadowColor: isDarkMode ? "#000" : "#fbbf24",
-            shadowOpacity: 0.1,
-            shadowOffset: { width: 0, height: 3 },
-            shadowRadius: 10,
-            elevation: 4,
+            borderWidth: 1,
+            borderColor,
           }}
         >
           <Text className={`text-3xl font-bold mb-2 ${textColor}`}>
@@ -94,12 +89,11 @@ export default function ShlokasScreen() {
           <Text className={`italic mb-4 text-[15px] ${secondaryText}`}>
             “{chapter.meaning.en}”
           </Text>
-          <Text className={`leading-relaxed text-[16px] ${textColor}`}>
+          <Text className={`leading-relaxed text-[16px] ${secondaryText}`}>
             {chapter.summary.en}
           </Text>
         </View>
 
-        {/* Verse List */}
         {verses.map((verse) => (
           <TouchableOpacity
             key={verse.verse_number}
@@ -108,26 +102,20 @@ export default function ShlokasScreen() {
                 `/home/chapters/${id}/${verse.verse_number}?verses_count=${chapter.verses_count}`
               )
             }
-            className={`rounded-2xl p-5 mb-4 shadow ${sectionBg}`}
-            style={{
-              shadowColor: isDarkMode ? "#000" : "#fbbf24",
-              shadowOpacity: 0.05,
-              shadowOffset: { width: 0, height: 2 },
-              shadowRadius: 8,
-              elevation: 2,
-            }}
+            className={`rounded-3xl p-5 mb-4 ${sectionBg}`}
+            style={{ borderWidth: 1, borderColor }}
           >
             <View className="flex-row justify-between items-center">
-              <View className="border-l-4 border-amber-500 pl-4 flex-1">
-                <Text className={`text-lg font-semibold mb-2 ${textColor}`}>
+              <View className="border-l-4 border-[#D97706] pl-4 flex-1">
+                <Text className={`text-lg font-semibold mb-1 ${textColor}`}>
                   Verse {verse.verse_number}
                 </Text>
-                <Text className={`text-base ${textColor}`}>
+                <Text className={`text-base ${secondaryText}`}>
                   श्लोक {verse.verse_number}
                 </Text>
               </View>
               {readVerses.has(verse.verse_number) && (
-                <CheckCircle size={22} color="#22c55e" className="ml-2" />
+                <CheckCircle size={22} color="#5BB974" className="ml-2" />
               )}
             </View>
           </TouchableOpacity>

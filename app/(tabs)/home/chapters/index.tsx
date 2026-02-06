@@ -3,26 +3,26 @@ import {
   TouchableOpacity,
   View,
   Text,
-  ActivityIndicator,
 } from "react-native";
 import { BookOpen } from "lucide-react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { ProgressBar } from "react-native-paper";
 import { useCallback, useState } from "react";
 import api from "@/utils/api";
-import { useThemeStyle } from "@/hooks/useThemeStyle";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "@/context/ThemeContext";
+import { LinearGradient } from "expo-linear-gradient";
+import MaterialLoader from "@/components/MaterialLoader";
 
 export default function ChaptersScreen() {
   const router = useRouter();
   const [chapters, setChapters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { isDarkMode } = useTheme();
-  const bgColor = isDarkMode ? "bg-gray-900" : "bg-amber-50";
-  const textColor = isDarkMode ? "text-white" : "text-amber-900";
-  const sectionBg = isDarkMode ? "bg-gray-800" : "bg-white";
-  const textMeaningColor = isDarkMode ? "text-gray-400" : "text-gray-700";
+
+  const textColor = isDarkMode ? "text-[#E8DEF8]" : "text-[#3E2723]";
+  const cardBg = isDarkMode ? "bg-[#2B2930]" : "bg-[#FFFDF9]";
+  const textMeaningColor = isDarkMode ? "text-[#CAC4D0]" : "text-[#625B71]";
 
   const fetchChapters = async () => {
     try {
@@ -67,60 +67,55 @@ export default function ChaptersScreen() {
 
   if (loading) {
     return (
-      <View className={`flex-1 justify-center items-center ${bgColor}`}>
-        <ActivityIndicator size="large" color="#f59e0b" />
+      <View className={`flex-1 justify-center items-center ${isDarkMode ? "bg-[#1C1B1F]" : "bg-[#FFF8F1]"}`}>
+        <MaterialLoader size="large" />
         <Text className={`mt-2 ${textColor}`}>Loading chapters...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView className={`p-2 px-6 ${bgColor}`}
-    contentContainerStyle={{ paddingBottom: 20}}
+    <LinearGradient
+      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      className="flex-1"
     >
-      <Text className={`text-2xl font-bold mb-4 ms-1 ${textColor}`}>
-        📖 All Chapters
-      </Text>
+      <ScrollView className="p-2 px-6" contentContainerStyle={{ paddingBottom: 90 }}>
+        <Text className={`text-3xl font-bold mb-5 mt-3 ${textColor}`}>📖 All Chapters</Text>
 
-      {chapters.map((chapter) => (
-        <TouchableOpacity
-          key={chapter.chapter_number}
-          className={`${sectionBg} rounded-2xl p-4 mb-4 shadow`}
-          onPress={() =>
-            router.push(
-              `/(tabs)/home/chapters/${chapter.chapter_number}/shlokas`
-            )
-          }
-        >
-          <View className="flex-row items-center">
-            <View className="bg-amber-200 p-3 rounded-full mr-4">
-              <BookOpen size={24} color="#92400e" />
+        {chapters.map((chapter) => (
+          <TouchableOpacity
+            key={chapter.chapter_number}
+            className={`${cardBg} rounded-3xl p-4 mb-4 border border-[#E8D5C4]`}
+            onPress={() =>
+              router.push(`/(tabs)/home/chapters/${chapter.chapter_number}/shlokas`)
+            }
+          >
+            <View className="flex-row items-center">
+              <View className="bg-[#FFDDB8] p-3 rounded-full mr-4">
+                <BookOpen size={24} color="#8A4D24" />
+              </View>
+              <View className="flex-1">
+                <Text className={`text-lg font-semibold ${textColor}`}>
+                  Chapter {chapter.chapter_number}: {chapter.name}
+                </Text>
+                <Text className={`text-sm ${textMeaningColor}`}>{chapter.meaning.en}</Text>
+                <Text className={`text-sm ${textMeaningColor}`}>{chapter.meaning.hi}</Text>
+              </View>
             </View>
-            <View className="flex-1">
-              <Text className={`text-lg font-semibold ${textColor}`}>
-                Chapter {chapter.chapter_number}: {chapter.name}
-              </Text>
-              <Text className={`text-sm ${textMeaningColor}`}>
-                {chapter.meaning.en}
-              </Text>
-              <Text className={`text-sm ${textMeaningColor}`}>
-                {chapter.meaning.hi}
-              </Text>
-            </View>
-          </View>
 
-          <View className="mt-4">
-            <ProgressBar
-              progress={chapter.progress}
-              color="#facc15"
-              style={{ height: 8, borderRadius: 4 }}
-            />
-            <Text className="text-sm text-gray-500 mt-1 text-right">
-              {Math.round(chapter.progress * 100)}% Read
-            </Text>
-          </View>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+            <View className="mt-4">
+              <ProgressBar
+                progress={chapter.progress}
+                color={isDarkMode ? "#D0BCFF" : "#8A4D24"}
+                style={{ height: 10, borderRadius: 10, backgroundColor: isDarkMode ? "#4A4458" : "#F8E7DA" }}
+              />
+              <Text className={`text-sm mt-1 text-right ${textMeaningColor}`}>
+                {Math.round(chapter.progress * 100)}% Read
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </LinearGradient>
   );
 }
