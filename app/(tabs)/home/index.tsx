@@ -5,6 +5,7 @@ import {
   Text,
   RefreshControl,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import {
@@ -27,8 +28,7 @@ import ActionSheet, { ActionSheetRef } from "react-native-actions-sheet";
 import { Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialLoader from "@/components/MaterialLoader";
-import { useScrollTabBar } from "@/hooks/useScrollTabBar";
-
+import homeLogo from "../../../assets/images/splashScreen.png";
 export default function HomeScreen() {
   const [shlokaOfTheDay, setShlokaOfTheDay] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -42,7 +42,6 @@ export default function HomeScreen() {
   const screenHeight = Dimensions.get("window").height;
   const viewRef = useRef<any>(null);
   const actionSheetRef = useRef<ActionSheetRef>(null);
-  const handleScroll = useScrollTabBar();
 
   const handlePresentModalPress = () => {
     actionSheetRef.current?.show();
@@ -141,18 +140,26 @@ export default function HomeScreen() {
         className="flex-1"
       >
         <ScrollView
-          onScroll={handleScroll}
           scrollEventThrottle={16}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           contentContainerStyle={{ paddingBottom: 90 }}
         >
-          <View className="items-center mt-8 mb-6">
-            <View className="rounded-full p-5 bg-[#FFDDB8]">
-              <BookText size={50} color="#8A4D24" />
-            </View>
-            <Text className={`text-4xl font-bold mt-4 ${textColor}`}>Bhagavad Gita</Text>
+          <View className="items-center mt-5 mb-6">
+            {/* <View className="rounded-full p-3 bg-[#FFDDB8]"> */}
+            <Image
+              source={homeLogo}
+              style={{
+                width: 150,
+                height: 150,
+                resizeMode: "contain",
+              }}
+            />
+            {/* </View> */}
+            <Text className={`text-4xl font-bold mt-4 ${textColor}`}>
+              Bhagavad Gita
+            </Text>
             <Text className={`text-base mt-1 ${subTextColor}`}>
               Sacred wisdom, beautifully presented
             </Text>
@@ -163,7 +170,9 @@ export default function HomeScreen() {
             className={`mx-5 ${cardBg} rounded-[28px] p-6 mb-6 border border-[#E8D5C4]`}
           >
             <View className="flex-row items-center justify-between mb-3">
-              <Text className={`text-xl font-semibold ${textColor}`}>🌸 Shloka of the Day</Text>
+              <Text className={`text-xl font-semibold ${textColor}`}>
+                🌸 Shloka of the Day
+              </Text>
               <Sparkles size={20} color={isDarkMode ? "#D0BCFF" : "#7D5260"} />
             </View>
             {loading ? (
@@ -177,7 +186,9 @@ export default function HomeScreen() {
                 <Text className={`text-base mb-2 ${subTextColor}`}>
                   Chapter {shlokaOfTheDay.chapter}, Verse {shlokaOfTheDay.verse}
                 </Text>
-                <Text className={`text-[22px] font-semibold leading-9 mb-3 ${textColor}`}>
+                <Text
+                  className={`text-[22px] font-semibold leading-9 mb-3 ${textColor}`}
+                >
                   {shlokaOfTheDay.text}
                 </Text>
                 <Text className={`text-base leading-7 ${subTextColor}`}>
@@ -186,45 +197,55 @@ export default function HomeScreen() {
               </View>
             ) : null}
             <View className="flex-row justify-end mt-5">
-              <TouchableOpacity className="flex-row items-center" onPress={shareShloka}>
+              <TouchableOpacity
+                className="flex-row items-center"
+                onPress={shareShloka}
+              >
                 <Share2 size={18} color={isDarkMode ? "#FFB59D" : "#8A4D24"} />
                 <Text className="text-[#8A4D24] font-semibold ml-2">Share</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          <View className={`mx-5 rounded-[28px] ${cardBg} p-4 border border-[#E8D5C4]`}>
+          <View
+            className={`mx-5 rounded-[28px] ${cardBg} p-4 border border-[#E8D5C4]`}
+          >
             <Text className={`text-xl font-semibold mb-4 ${textColor}`}>
               🙏 Explore Your Spiritual Journey
             </Text>
 
-            {[{
-              icon: <BookOpen size={24} color="#8A4D24" />,
-              title: "Read Chapters",
-              desc: "Explore all 18 chapters with deep meanings",
-              onPress: () => router.push("/(tabs)/home/chapters"),
-              color: "bg-[#FFDDB8]",
-            }, {
-              icon: <Star size={24} color="#8A4D24" />,
-              title: "Favorites",
-              desc: "Keep your most loved verses in one place",
-              onPress: () => router.push("/(tabs)/home/favorite"),
-              color: "bg-[#FFE4C4]",
-            }, {
-              icon: <Headphones size={24} color="#8A4D24" />,
-              title: "Audio Recitations",
-              desc: "Sanskrit chants and guided listening",
-              onPress: handlePresentModalPress,
-              color: "bg-[#FFEAD7]",
-              soon: true,
-            }, {
-              icon: <Sun size={24} color="#8A4D24" />,
-              title: "Daily Practice",
-              desc: "Build a mindful reading routine",
-              onPress: handlePresentModalPress,
-              color: "bg-[#FFEAD7]",
-              soon: true,
-            }].map((item, index) => (
+            {[
+              {
+                icon: <BookOpen size={24} color="#8A4D24" />,
+                title: "Read Chapters",
+                desc: "Explore all 18 chapters with deep meanings",
+                onPress: () => router.push("/(tabs)/home/chapters"),
+                color: "bg-[#FFDDB8]",
+              },
+              {
+                icon: <Star size={24} color="#8A4D24" />,
+                title: "Favorites",
+                desc: "Keep your most loved verses in one place",
+                onPress: () => router.push("/(tabs)/home/favorite"),
+                color: "bg-[#FFE4C4]",
+              },
+              {
+                icon: <Headphones size={24} color="#8A4D24" />,
+                title: "Audio Recitations",
+                desc: "Sanskrit chants and guided listening",
+                onPress: handlePresentModalPress,
+                color: "bg-[#FFEAD7]",
+                soon: true,
+              },
+              {
+                icon: <Sun size={24} color="#8A4D24" />,
+                title: "Daily Practice",
+                desc: "Build a mindful reading routine",
+                onPress: handlePresentModalPress,
+                color: "bg-[#FFEAD7]",
+                soon: true,
+              },
+            ].map((item, index) => (
               <Animated.View
                 key={item.title}
                 entering={FadeInDown.duration(1100 + index * 200)}
@@ -234,20 +255,37 @@ export default function HomeScreen() {
                   onPress={item.onPress}
                   className="rounded-3xl px-4 py-4 flex-row items-center border border-[#EEDBC8]"
                 >
-                  <View className={`${item.color} rounded-full p-3 mr-4`}>{item.icon}</View>
+                  <View className={`${item.color} rounded-full p-3 mr-4`}>
+                    {item.icon}
+                  </View>
                   <View className="flex-1">
-                    <Text className={`text-lg font-semibold ${textColor}`}>{item.title}</Text>
-                    <Text className={`text-sm mt-1 ${subTextColor}`}>{item.desc}</Text>
+                    <Text className={`text-lg font-semibold ${textColor}`}>
+                      {item.title}
+                    </Text>
+                    <Text className={`text-sm mt-1 ${subTextColor}`}>
+                      {item.desc}
+                    </Text>
                   </View>
                   {item.soon && (
                     <View className="bg-[#EADDFF] px-2 py-1 rounded-full">
-                      <Text className="text-xs text-[#4A4458] font-semibold">Coming Soon</Text>
+                      <Text className="text-xs text-[#4A4458] font-semibold">
+                        Coming Soon
+                      </Text>
                     </View>
                   )}
                 </TouchableOpacity>
               </Animated.View>
             ))}
           </View>
+          <Animated.View
+            entering={FadeInDown.duration(2000)}
+            className="items-center mt-8"
+          >
+            <Text className={`text-sm ${textColor} opacity-60`}>
+              Crafted with ❤️ by{" "}
+              <Text className="text-amber-800 font-semibold">Khilan Patel</Text>
+            </Text>
+          </Animated.View>
         </ScrollView>
       </LinearGradient>
       <ActionSheet

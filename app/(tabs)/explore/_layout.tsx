@@ -12,7 +12,7 @@ export default function ExploreLayout() {
     <ThemedLayout>
       <Stack
         screenOptions={{
-          headerShown: true,
+          headerShown: false,
           headerStyle: { backgroundColor: headerBg },
           headerTitleStyle: { color: headerText, fontWeight: "700" },
           headerTintColor: headerText,

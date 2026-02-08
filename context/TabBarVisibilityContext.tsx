@@ -22,11 +22,3 @@ export function TabBarVisibilityProvider({ children }: { children: React.ReactNo
     </TabBarVisibilityContext.Provider>
   );
 }
-
-export function useTabBarVisibility() {
-  const context = useContext(TabBarVisibilityContext);
-  if (!context) {
-    throw new Error("useTabBarVisibility must be used within TabBarVisibilityProvider");
-  }
-  return context;
-}

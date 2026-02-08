@@ -23,14 +23,14 @@ export default function HomeLayout() {
           name="index"
           options={{ title: "Home", headerShown: false }}
         />
-        <Stack.Screen name="chapters/index" options={{ title: "Chapters" }} />
+        <Stack.Screen name="chapters/index" options={{ title: "Chapters" , headerShown: false }} />
         <Stack.Screen
           name="chapters/[id]/shlokas"
-          options={{ title: "Shlokas" }}
+          options={{ title: "Shlokas" , headerShown: false }}
         />
         <Stack.Screen
           name="chapters/[id]/[verse_id]"
-          options={{ title: "Shloka Details" }}
+          options={{ title: "Shloka Details", headerShown: false }}
         />
         <Stack.Screen
           name="favorite/index"

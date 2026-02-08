@@ -13,14 +13,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "@/context/ThemeContext";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialLoader from "@/components/MaterialLoader";
-import { useScrollTabBar } from "@/hooks/useScrollTabBar";
 
 export default function ChaptersScreen() {
   const router = useRouter();
   const [chapters, setChapters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { isDarkMode } = useTheme();
-  const handleScroll = useScrollTabBar();
 
   const textColor = isDarkMode ? "text-[#E8DEF8]" : "text-[#3E2723]";
   const cardBg = isDarkMode ? "bg-[#2B2930]" : "bg-[#FFFDF9]";
@@ -83,7 +81,6 @@ export default function ChaptersScreen() {
       <ScrollView
         className="p-2 px-6"
         contentContainerStyle={{ paddingBottom: 90 }}
-        onScroll={handleScroll}
         scrollEventThrottle={16}
       >
         <Text className={`text-3xl font-bold mb-5 mt-3 ${textColor}`}>📖 All Chapters</Text>

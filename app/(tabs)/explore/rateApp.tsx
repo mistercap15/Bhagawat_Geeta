@@ -2,17 +2,11 @@ import React, { useEffect } from "react";
 import { View, Text, TouchableOpacity, Linking } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { LinearGradient } from "expo-linear-gradient";
-import { useTabBarVisibility } from "@/context/TabBarVisibilityContext";
 
 const RateApp = () => {
   const { isDarkMode } = useTheme();
-  const { setVisible } = useTabBarVisibility();
   const textColor = isDarkMode ? "text-[#E8DEF8]" : "text-[#3E2723]";
   const subTextColor = isDarkMode ? "text-[#CAC4D0]" : "text-[#625B71]";
-
-  useEffect(() => {
-    setVisible(true);
-  }, [setVisible]);
 
   return (
     <LinearGradient

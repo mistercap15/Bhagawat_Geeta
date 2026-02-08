@@ -6,12 +6,10 @@ import { Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Trash2 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useScrollTabBar } from "@/hooks/useScrollTabBar";
 
 const Explore = () => {
   const router = useRouter();
   const { toggleTheme, isDarkMode } = useTheme();
-  const handleScroll = useScrollTabBar();
 
   const textColor = isDarkMode ? "text-[#E8DEF8]" : "text-[#3E2723]";
   const subTextColor = isDarkMode ? "text-[#CAC4D0]" : "text-[#625B71]";
@@ -43,9 +41,8 @@ const Explore = () => {
       className="flex-1"
     >
       <ScrollView
-        className="flex-1 px-6 py-8"
+        className="flex-1 px-6 py-5"
         contentContainerStyle={{ paddingBottom: 40 }}
-        onScroll={handleScroll}
         scrollEventThrottle={16}
       >
         <Text className={`text-3xl font-bold mb-2 ${textColor}`}>Explore</Text>
@@ -81,7 +78,7 @@ const Explore = () => {
         ))}
 
         <TouchableOpacity
-          className="p-4 rounded-2xl mt-6 mb-10 border border-[#FCA5A5] flex-row items-center justify-center"
+          className="p-4 rounded-2xl mb-10 border border-[#FCA5A5] flex-row items-center justify-center"
           onPress={() => {
             Alert.alert(
               "Clear All Data",

@@ -1,6 +1,7 @@
 import gitaData from "@/data/gita.json";
 
-type GitaChapter = {
+/* ✅ EXPORT TYPES */
+export type GitaChapter = {
   chapter_number: number;
   name: string;
   transliteration: string;
@@ -14,7 +15,7 @@ type GitaChapter = {
   verses_count: number;
 };
 
-type GitaSlok = {
+export type GitaSlok = {
   chapter: number;
   verse: number;
   slok: string;
@@ -33,16 +34,26 @@ type GitaPayload = {
 
 const payload = gitaData as GitaPayload;
 
-export const getChapters = async () => {
+/* 📚 API FUNCTIONS */
+export const getChapters = async (): Promise<GitaChapter[]> => {
   return payload.chapters;
 };
 
-export const getChapter = async (chapterId: string | number) => {
+export const getChapter = async (
+  chapterId: string | number
+): Promise<GitaChapter | null> => {
   const chapterNumber = Number(chapterId);
-  return payload.chapters.find((chapter) => chapter.chapter_number === chapterNumber) ?? null;
+  return (
+    payload.chapters.find(
+      (chapter) => chapter.chapter_number === chapterNumber
+    ) ?? null
+  );
 };
 
-export const getSlok = async (chapterId: string | number, verseId: string | number) => {
+export const getSlok = async (
+  chapterId: string | number,
+  verseId: string | number
+): Promise<GitaSlok | null> => {
   const key = `${chapterId}-${verseId}`;
   return payload.sloks[key] ?? null;
 };

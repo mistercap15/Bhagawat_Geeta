@@ -12,7 +12,6 @@ import { useTheme } from "@/context/ThemeContext";
 import MaterialLoader from "@/components/MaterialLoader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CheckCircle } from "lucide-react-native";
-import { useScrollTabBar } from "@/hooks/useScrollTabBar";
 
 export default function ShlokasScreen() {
   const { id } = useLocalSearchParams();
@@ -22,7 +21,6 @@ export default function ShlokasScreen() {
   const [error, setError] = useState(false);
   const router = useRouter();
   const { isDarkMode } = useTheme();
-  const handleScroll = useScrollTabBar();
 
   const textColor = isDarkMode ? "text-[#E8DEF8]" : "text-[#3E2723]";
   const sectionBg = isDarkMode ? "bg-[#2B2930]" : "bg-[#FFFDF9]";
@@ -88,7 +86,6 @@ export default function ShlokasScreen() {
       <ScrollView
         className="px-6 pt-6"
         contentContainerStyle={{ paddingBottom: 90 }}
-        onScroll={handleScroll}
         scrollEventThrottle={16}
       >
         <View

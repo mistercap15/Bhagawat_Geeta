@@ -2,11 +2,9 @@ import React from "react";
 import { Text, ScrollView } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { LinearGradient } from "expo-linear-gradient";
-import { useScrollTabBar } from "@/hooks/useScrollTabBar";
 
 const TermsAndConditions = () => {
   const { isDarkMode } = useTheme();
-  const handleScroll = useScrollTabBar();
   const textColor = isDarkMode ? "text-[#E8DEF8]" : "text-[#3E2723]";
   const subTextColor = isDarkMode ? "text-[#CAC4D0]" : "text-[#625B71]";
 
@@ -17,7 +15,6 @@ const TermsAndConditions = () => {
     >
       <ScrollView
         className="flex-1 px-6 py-8"
-        onScroll={handleScroll}
         scrollEventThrottle={16}
       >
         <Text className={`text-2xl font-bold mb-4 ${textColor}`}>
