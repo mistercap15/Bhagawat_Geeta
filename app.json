@@ -4,7 +4,7 @@
     "slug": "Bhagavad_gita",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/appLogo.jpg",
+    "icon": "./assets/images/new_app_icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,7 +14,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/appLogo.jpg",
+        "foregroundImage": "./assets/images/new_app_icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.khilanpatel15.Bhagawat_Geeta"
