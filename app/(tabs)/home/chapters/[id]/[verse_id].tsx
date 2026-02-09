@@ -21,6 +21,8 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   runOnJS,
+  interpolate,
+  Extrapolate,
 } from "react-native-reanimated";
 import { PanGestureHandler } from "react-native-gesture-handler";
 
@@ -120,9 +122,81 @@ export default function VerseDetails() {
     }
   };
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    const rotation = interpolate(
+      translateX.value,
+      [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
+      [-18, 0, 18],
+      Extrapolate.CLAMP
+    );
+    const parallax = interpolate(
+      translateX.value,
+      [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
+      [-SCREEN_WIDTH * 0.15, 0, SCREEN_WIDTH * 0.15],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      transform: [
+        { perspective: 1200 },
+        { translateX: translateX.value + parallax },
+        { rotateY: `${rotation}deg` },
+      ],
+    };
+  });
+
+  const animatedShadowStyle = useAnimatedStyle(() => {
+    const shadowOpacity = interpolate(
+      Math.abs(translateX.value),
+      [0, SWIPE_THRESHOLD, SCREEN_WIDTH],
+      [0, 0.2, 0.35],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      opacity: shadowOpacity,
+    };
+  });
+
+  const animatedLeftFoldStyle = useAnimatedStyle(() => {
+    const foldOpacity = interpolate(
+      translateX.value,
+      [0, SCREEN_WIDTH * 0.3, SCREEN_WIDTH],
+      [0, 0.25, 0.4],
+      Extrapolate.CLAMP
+    );
+    const foldScale = interpolate(
+      translateX.value,
+      [0, SCREEN_WIDTH * 0.5],
+      [0.85, 1],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      opacity: foldOpacity,
+      transform: [{ scaleX: foldScale }],
+    };
+  });
+
+  const animatedRightFoldStyle = useAnimatedStyle(() => {
+    const foldOpacity = interpolate(
+      translateX.value,
+      [-SCREEN_WIDTH, -SCREEN_WIDTH * 0.3, 0],
+      [0.4, 0.25, 0],
+      Extrapolate.CLAMP
+    );
+    const foldScale = interpolate(
+      translateX.value,
+      [-SCREEN_WIDTH * 0.5, 0],
+      [1, 0.85],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      opacity: foldOpacity,
+      transform: [{ scaleX: foldScale }],
+    };
+  });
 
   /* ❤️ TOGGLES */
   const toggleFavorite = async () => {
@@ -174,7 +248,7 @@ export default function VerseDetails() {
             Verse {currentVerseId} / {versesCount}
           </Text>
           <Text style={{ color: palette.muted }} className="text-xs mt-1">
-            Swipe left / right on the verse card
+            Swipe left / right to turn the page
           </Text>
         </View>
 
@@ -193,6 +267,53 @@ export default function VerseDetails() {
               }}
               className="rounded-[28px] border p-6"
             >
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  {
+                    position: "absolute",
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    backgroundColor: "#000",
+                    borderRadius: 28,
+                  },
+                  animatedShadowStyle,
+                ]}
+              />
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  {
+                    position: "absolute",
+                    top: 10,
+                    bottom: 10,
+                    left: 0,
+                    width: 32,
+                    backgroundColor: palette.pageBorder,
+                    borderTopLeftRadius: 24,
+                    borderBottomLeftRadius: 24,
+                  },
+                  animatedLeftFoldStyle,
+                ]}
+              />
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  {
+                    position: "absolute",
+                    top: 10,
+                    bottom: 10,
+                    right: 0,
+                    width: 32,
+                    backgroundColor: palette.pageBorder,
+                    borderTopRightRadius: 24,
+                    borderBottomRightRadius: 24,
+                  },
+                  animatedRightFoldStyle,
+                ]}
+              />
               <Text
                 style={{ color: palette.accent }}
                 className="text-xs font-semibold mb-2"
