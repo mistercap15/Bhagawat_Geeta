@@ -6,13 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  StyleSheet,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   Heart,
   CheckSquare,
   Square,
-  BookOpenText,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react-native";
@@ -31,10 +32,7 @@ import { useTheme } from "@/context/ThemeContext";
 import MaterialLoader from "@/components/MaterialLoader";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
-const SCREEN_HEIGHT = Dimensions.get("window").height;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
-const TAB_BAR_HEIGHT = 62;
-const TAB_BAR_BOTTOM_SPACE = 16;
 
 export default function VerseDetails() {
   const { id, verse_id, verses_count } = useLocalSearchParams();
@@ -42,17 +40,19 @@ export default function VerseDetails() {
   const versesCount = Number(verses_count);
   const initialVerseId = Number(verse_id);
 
+  const insets = useSafeAreaInsets();
+  const { isDarkMode } = useTheme();
+
   const [verse, setVerse] = useState<any>(null);
+  const [nextVerse, setNextVerse] = useState<any>(null);
+  const [prevVerse, setPrevVerse] = useState<any>(null);
   const [currentVerseId, setCurrentVerseId] = useState(initialVerseId);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isRead, setIsRead] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const translateX = useSharedValue(0);
-  const rotateY = useSharedValue(0);
-  const { isDarkMode } = useTheme();
 
-  /* 🎨 ORIGINAL COLORS */
   const palette = useMemo(
     () => ({
       gradient: isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"],
@@ -66,107 +66,184 @@ export default function VerseDetails() {
       innerCard: isDarkMode ? "#312C3A" : "#FDF2E5",
       shadow: isDarkMode ? "rgba(0,0,0,0.6)" : "rgba(138,77,36,0.2)",
       bookmark: "#C41E3A",
+      curlOverlay: isDarkMode ? "#2A2630" : "#FFFFFF",
     }),
-    [isDarkMode],
+    [isDarkMode]
   );
 
-  /* 📖 LOAD VERSE */
+  // ─── Load Verse ────────────────────────────────────────────────
   const loadVerse = async (verseId: number) => {
     const data = await getSlok(chapterId, verseId);
     setVerse(data);
-    const fav = await AsyncStorage.getItem(
-      `favorite_verse_${chapterId}_${verseId}`,
-    );
-    const read = await AsyncStorage.getItem(
-      `read_verse_${chapterId}_${verseId}`,
-    );
+
+    const fav = await AsyncStorage.getItem(`favorite_verse_${chapterId}_${verseId}`);
+    const read = await AsyncStorage.getItem(`read_verse_${chapterId}_${verseId}`);
+
     setIsFavorite(fav === "true");
     setIsRead(read === "true");
+  };
+
+  const loadAdjacentVerses = async (verseId: number) => {
+    if (verseId < versesCount) {
+      const next = await getSlok(chapterId, verseId + 1);
+      setNextVerse(next);
+    } else {
+      setNextVerse(null);
+    }
+
+    if (verseId > 1) {
+      const prev = await getSlok(chapterId, verseId - 1);
+      setPrevVerse(prev);
+    } else {
+      setPrevVerse(null);
+    }
   };
 
   useEffect(() => {
     (async () => {
       await loadVerse(initialVerseId);
+      await loadAdjacentVerses(initialVerseId);
       setLoading(false);
     })();
-  }, []);
+  }, [initialVerseId]);
 
-  /* 🔁 CHANGE VERSE */
+  // ─── Change Verse ──────────────────────────────────────────────
   const changeVerse = async (direction: "next" | "prev") => {
-    const next = direction === "next" ? currentVerseId + 1 : currentVerseId - 1;
-    if (next < 1 || next > versesCount) {
+    const nextId = direction === "next" ? currentVerseId + 1 : currentVerseId - 1;
+
+    if (nextId < 1 || nextId > versesCount) {
       translateX.value = withTiming(0, { duration: 300 });
-      rotateY.value = withTiming(0, { duration: 300 });
       return;
     }
-    setCurrentVerseId(next);
-    await loadVerse(next);
+
+    setCurrentVerseId(nextId);
+    await loadVerse(nextId);
+    await loadAdjacentVerses(nextId);
     translateX.value = 0;
-    rotateY.value = 0;
   };
 
-  /* 🖐️ GESTURE WITH PAGE CURL */
+  // ─── Gesture Handlers ──────────────────────────────────────────
   const onGestureEvent = (e: any) => {
-    const translation = e.nativeEvent.translationX;
-    translateX.value = translation;
+    const translationX = e.nativeEvent.translationX;
+    const translationY = e.nativeEvent.translationY;
 
-    // Create 3D page curl effect
-    const progress = translation / SCREEN_WIDTH;
-    rotateY.value = progress * 45; // Max 45 degrees rotation
+    // Ignore if mostly vertical movement
+    if (Math.abs(translationY) > Math.abs(translationX)) return;
+
+    translateX.value = translationX;
   };
 
-  const onGestureEnd = () => {
+  const onGestureEnd = (e: any) => {
+    const translationY = e.nativeEvent.translationY;
+
+    if (Math.abs(translationY) > Math.abs(translateX.value)) {
+      translateX.value = withTiming(0, { duration: 300 });
+      return;
+    }
+
     if (Math.abs(translateX.value) > SWIPE_THRESHOLD) {
       const dir = translateX.value < 0 ? "next" : "prev";
-
-      // Animate page turn
       translateX.value = withTiming(
         translateX.value < 0 ? -SCREEN_WIDTH : SCREEN_WIDTH,
         { duration: 350 },
-      );
-      rotateY.value = withTiming(
-        translateX.value < 0 ? -90 : 90,
-        { duration: 350 },
-        () => runOnJS(changeVerse)(dir),
+        () => runOnJS(changeVerse)(dir)
       );
     } else {
-      // Snap back
       translateX.value = withTiming(0, { duration: 300 });
-      rotateY.value = withTiming(0, { duration: 300 });
     }
   };
 
-  /* 🎬 ANIMATIONS */
-  const pageAnimatedStyle = useAnimatedStyle(() => {
-    const perspective = 1200;
-    const rotateYDeg = `${rotateY.value}deg`;
+  // ─── Animated Styles ───────────────────────────────────────────
+  const currentPageAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
 
-    // Add shadow based on rotation
-    const shadowOpacity = interpolate(
-      Math.abs(rotateY.value),
-      [0, 45],
-      [0.1, 0.4],
-      Extrapolate.CLAMP,
+  const nextPageAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      translateX.value,
+      [0, -SCREEN_WIDTH / 2],
+      [0, 1],
+      Extrapolate.CLAMP
     );
-
-    return {
-      transform: [
-        { perspective },
-        { translateX: translateX.value },
-        { rotateY: rotateYDeg },
-      ],
-      shadowOpacity,
-    };
+    return { opacity };
   });
 
-  /* ❤️ TOGGLES */
+  const prevPageAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      translateX.value,
+      [0, SCREEN_WIDTH / 2],
+      [0, 1],
+      Extrapolate.CLAMP
+    );
+    return { opacity };
+  });
+
+  const curlOverlayRightStyle = useAnimatedStyle(() => {
+    const isSwipingLeft = translateX.value < 0;
+    if (!isSwipingLeft) return { opacity: 0, width: 0 };
+
+    const overlayWidth = interpolate(
+      Math.abs(translateX.value),
+      [0, SCREEN_WIDTH],
+      [0, SCREEN_WIDTH],
+      Extrapolate.CLAMP
+    );
+
+    const overlayOpacity = interpolate(
+      Math.abs(translateX.value),
+      [0, SCREEN_WIDTH * 0.2],
+      [0, 0.95],
+      Extrapolate.CLAMP
+    );
+
+    const shadowOpacity = interpolate(
+      Math.abs(translateX.value),
+      [0, SCREEN_WIDTH * 0.5],
+      [0, 0.6],
+      Extrapolate.CLAMP
+    );
+
+    return { opacity: overlayOpacity, width: overlayWidth, shadowOpacity };
+  });
+
+  const curlOverlayLeftStyle = useAnimatedStyle(() => {
+    const isSwipingRight = translateX.value > 0;
+    if (!isSwipingRight) return { opacity: 0, width: 0 };
+
+    const overlayWidth = interpolate(
+      Math.abs(translateX.value),
+      [0, SCREEN_WIDTH],
+      [0, SCREEN_WIDTH],
+      Extrapolate.CLAMP
+    );
+
+    const overlayOpacity = interpolate(
+      Math.abs(translateX.value),
+      [0, SCREEN_WIDTH * 0.2],
+      [0, 0.95],
+      Extrapolate.CLAMP
+    );
+
+    const shadowOpacity = interpolate(
+      Math.abs(translateX.value),
+      [0, SCREEN_WIDTH * 0.5],
+      [0, 0.6],
+      Extrapolate.CLAMP
+    );
+
+    return { opacity: overlayOpacity, width: overlayWidth, shadowOpacity };
+  });
+
+  // ─── Toggles ───────────────────────────────────────────────────
   const toggleFavorite = async () => {
     const v = !isFavorite;
     setIsFavorite(v);
     const key = `favorite_verse_${chapterId}_${currentVerseId}`;
-    v
-      ? await AsyncStorage.setItem(key, "true")
-      : await AsyncStorage.removeItem(key);
+    if (v) {
+      await AsyncStorage.setItem(key, "true");
+    } else {
+      await AsyncStorage.removeItem(key);
+    }
   };
 
   const toggleRead = async () => {
@@ -174,220 +251,415 @@ export default function VerseDetails() {
     setIsRead(v);
     await AsyncStorage.setItem(
       `read_verse_${chapterId}_${currentVerseId}`,
-      v.toString(),
+      v.toString()
+    );
+  };
+
+  // ─── Render Verse Card ─────────────────────────────────────────
+  const renderVerseCard = (verseData: any, verseId: number, isCurrent = false) => {
+    if (!verseData) return null;
+
+    return (
+      <View
+        style={[
+          styles.pageContainer,
+          {
+            backgroundColor: palette.page,
+            borderColor: palette.pageBorder,
+          },
+        ]}
+      >
+        {/* Bookmark Ribbon */}
+        {isCurrent && isFavorite && (
+          <View style={[styles.bookmark, { backgroundColor: palette.bookmark }]} />
+        )}
+
+        {/* Favorite Button */}
+        {isCurrent && (
+          <TouchableOpacity
+            onPress={toggleFavorite}
+            style={[
+              styles.cornerButton,
+              styles.leftCornerButton,
+              { backgroundColor: palette.buttonBg, borderColor: palette.pageBorder },
+            ]}
+            activeOpacity={0.7}
+          >
+            <Heart
+              size={20}
+              color={isFavorite ? "#C41E3A" : palette.muted}
+              fill={isFavorite ? "#C41E3A" : "transparent"}
+              strokeWidth={2.5}
+            />
+          </TouchableOpacity>
+        )}
+
+        {/* Read Button */}
+        {isCurrent && (
+          <TouchableOpacity
+            onPress={toggleRead}
+            style={[
+              styles.cornerButton,
+              styles.rightCornerButton,
+              { backgroundColor: palette.buttonBg, borderColor: palette.pageBorder },
+            ]}
+            activeOpacity={0.7}
+          >
+            {isRead ? (
+              <CheckSquare color="#5BB974" size={20} strokeWidth={2.5} />
+            ) : (
+              <Square color={palette.muted} size={20} strokeWidth={2.5} />
+            )}
+          </TouchableOpacity>
+        )}
+
+        {/* Page Corner Fold */}
+        <View style={[styles.cornerFold, { borderRightColor: palette.pageBorder }]} />
+
+        {/* Content */}
+        <ScrollView style={styles.cardContent} showsVerticalScrollIndicator={false} bounces={false}>
+          <View style={styles.verseSection}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.dot, { backgroundColor: palette.accentLight }]} />
+              <Text style={[styles.sectionTitle, { color: palette.accent }]}>
+                संस्कृत श्लोक
+              </Text>
+              <View style={[styles.dot, { backgroundColor: palette.accentLight }]} />
+            </View>
+            <Text style={[styles.sanskritText, { color: palette.text }]}>{verseData.slok}</Text>
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: palette.pageBorder }]} />
+
+          <View style={[styles.meaningCard, { backgroundColor: palette.innerCard, borderColor: palette.pageBorder }]}>
+            <Text style={[styles.meaningTitle, { color: palette.accent }]}>ॐ हिंदी भावार्थ ॐ</Text>
+            <Text style={[styles.meaningText, { color: palette.text }]}>{verseData.tej.ht}</Text>
+          </View>
+
+          <View style={[styles.meaningCard, { backgroundColor: palette.innerCard, borderColor: palette.pageBorder }]}>
+            <Text style={[styles.meaningTitle, { color: palette.accent }]}>ॐ English Translation ॐ</Text>
+            <Text style={[styles.meaningText, { color: palette.text }]}>{verseData.siva.et}</Text>
+          </View>
+
+          <View style={styles.footer}>
+            <View style={[styles.footerLine, { backgroundColor: palette.accent }]} />
+          </View>
+        </ScrollView>
+      </View>
     );
   };
 
   if (loading || !verse) {
     return (
-      <LinearGradient
-        colors={palette.gradient as [string, string]}
-        className="flex-1 items-center justify-center"
-      >
+      <LinearGradient colors={palette.gradient as [string, string]} style={styles.loaderContainer}>
         <MaterialLoader size="large" />
       </LinearGradient>
     );
   }
 
   return (
-    <LinearGradient
-      colors={palette.gradient as [string, string]}
-      className="flex-1"
-    >
-      {/* Book Binding Shadow on Left */}
-      <View
-        style={{ backgroundColor: palette.shadow }}
-        className="absolute left-0 top-0 bottom-0 w-2"
-      />
+    <LinearGradient colors={palette.gradient as [string, string]} style={styles.container}>
 
-      <ScrollView
-        className="px-5 pt-5"
-        contentContainerStyle={{
-          paddingBottom: TAB_BAR_HEIGHT + TAB_BAR_BOTTOM_SPACE + 24,
-        }}
-      >
-        {/* DECORATIVE HEADER */}
-        <View className="items-center mb-6">
-          <Text
-            style={{ color: palette.accent }}
-            className="mt-2 text-base font-semibold"
-          >
+      <View style={styles.contentWrapper}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.chapterText, { color: palette.accent }]}>
             अध्याय {verse.chapter}
           </Text>
-          <Text
-            style={{ color: palette.muted }}
-            className="text-sm mt-1 font-medium"
-          >
+          <Text style={[styles.verseCountText, { color: palette.muted }]}>
             श्लोक {currentVerseId} / {versesCount}
           </Text>
-
-          {/* Page Navigation Hint */}
-          <View className="flex-row items-center mt-3 gap-2">
+          <View style={styles.navigationHint}>
             <ChevronLeft color={palette.muted} size={16} />
-            <Text style={{ color: palette.muted }} className="text-xs">
-              Swipe to turn pages
-            </Text>
+            <Text style={[styles.hintText, { color: palette.muted }]}>Swipe to turn pages</Text>
             <ChevronRight color={palette.muted} size={16} />
           </View>
         </View>
 
-        {/* BOOK PAGE */}
-        <View className="mx-1">
+        {/* Pages with gesture */}
+        <View style={styles.pagesContainer}>
           <PanGestureHandler
             onGestureEvent={onGestureEvent}
             onEnded={onGestureEnd}
+            activeOffsetX={[-10, 10]}
+            failOffsetY={[-15, 15]}
           >
-            <Animated.View style={pageAnimatedStyle}>
-              <View
-                style={{
-                  backgroundColor: palette.page,
-                  borderColor: palette.pageBorder,
-                  shadowColor: palette.shadow,
-                }}
-                className="rounded-lg border-2 p-6 shadow-lg relative"
+            <Animated.View style={styles.gestureContainer}>
+              {/* Previous page (shown when swiping right) */}
+              {prevVerse && (
+                <Animated.View
+                  style={[styles.pageWrapper, styles.underlyingPage, prevPageAnimatedStyle]}
+                >
+                  {renderVerseCard(prevVerse, currentVerseId - 1)}
+                </Animated.View>
+              )}
+
+              {/* Next page (shown when swiping left) */}
+              {nextVerse && (
+                <Animated.View
+                  style={[styles.pageWrapper, styles.underlyingPage, nextPageAnimatedStyle]}
+                >
+                  {renderVerseCard(nextVerse, currentVerseId + 1)}
+                </Animated.View>
+              )}
+
+              {/* Current page */}
+              <Animated.View
+                style={[styles.pageWrapper, styles.currentPage, currentPageAnimatedStyle]}
               >
-                {/* Bookmark Ribbon */}
-                {isFavorite && (
-                  <View
-                    style={{ backgroundColor: palette.bookmark }}
-                    className="absolute -top-0.5 right-10 w-6 h-20 rounded-b shadow-md"
+                {renderVerseCard(verse, currentVerseId, true)}
+
+                {/* Curl overlay - right side (next page) */}
+                <Animated.View
+                  style={[
+                    styles.curlOverlay,
+                    styles.curlOverlayRight,
+                    { backgroundColor: palette.curlOverlay, shadowColor: "#000" },
+                    curlOverlayRightStyle,
+                  ]}
+                  pointerEvents="none"
+                >
+                  <LinearGradient
+                    colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.45)"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.curlShadowGradientRight}
                   />
-                )}
+                </Animated.View>
 
-                {/* Favorite Button - Top Left Corner */}
-                <TouchableOpacity
-                  onPress={toggleFavorite}
-                  style={{
-                    backgroundColor: palette.buttonBg,
-                    borderColor: palette.pageBorder,
-                  }}
-                  className="absolute -top-3 -left-3 w-12 h-12 rounded-full border-2 items-center justify-center shadow-lg z-10"
-                  activeOpacity={0.7}
+                {/* Curl overlay - left side (prev page) */}
+                <Animated.View
+                  style={[
+                    styles.curlOverlay,
+                    styles.curlOverlayLeft,
+                    { backgroundColor: palette.curlOverlay, shadowColor: "#000" },
+                    curlOverlayLeftStyle,
+                  ]}
+                  pointerEvents="none"
                 >
-                  <Heart
-                    size={20}
-                    color={isFavorite ? "#C41E3A" : palette.muted}
-                    fill={isFavorite ? "#C41E3A" : "transparent"}
-                    strokeWidth={2.5}
+                  <LinearGradient
+                    colors={["rgba(0,0,0,0.45)", "rgba(0,0,0,0)"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.curlShadowGradientLeft}
                   />
-                </TouchableOpacity>
-
-                {/* Read Button - Top Right Corner */}
-                <TouchableOpacity
-                  onPress={toggleRead}
-                  style={{
-                    backgroundColor: palette.buttonBg,
-                    borderColor: palette.pageBorder,
-                  }}
-                  className="absolute -top-3 -right-3 w-12 h-12 rounded-full border-2 items-center justify-center shadow-lg z-10"
-                  activeOpacity={0.7}
-                >
-                  {isRead ? (
-                    <CheckSquare color="#5BB974" size={20} strokeWidth={2.5} />
-                  ) : (
-                    <Square color={palette.muted} size={20} strokeWidth={2.5} />
-                  )}
-                </TouchableOpacity>
-
-                {/* Page Corner Fold Effect */}
-                <View
-                  style={{
-                    borderRightColor: palette.pageBorder,
-                    borderBottomColor: "transparent",
-                    borderRightWidth: 30,
-                    borderBottomWidth: 30,
-                  }}
-                  className="absolute top-0 right-0 w-0 h-0"
-                />
-
-                {/* Sanskrit Verse */}
-                <View className="mb-5">
-                  <View className="flex-row items-center justify-center mb-3 gap-2">
-                    <View
-                      style={{ backgroundColor: palette.accentLight }}
-                      className="w-1 h-1 rounded-full"
-                    />
-                    <Text
-                      style={{ color: palette.accent }}
-                      className="text-xs font-semibold tracking-wider uppercase"
-                    >
-                      संस्कृत श्लोक
-                    </Text>
-                    <View
-                      style={{ backgroundColor: palette.accentLight }}
-                      className="w-1 h-1 rounded-full"
-                    />
-                  </View>
-                  <Text
-                    style={{ color: palette.text }}
-                    className="text-[26px] leading-[42px] font-semibold text-center tracking-wide"
-                  >
-                    {verse.slok}
-                  </Text>
-                </View>
-
-                {/* Divider */}
-                <View
-                  style={{ backgroundColor: palette.pageBorder }}
-                  className="h-px my-5 opacity-30"
-                />
-
-                {/* Hindi Meaning */}
-                <View
-                  style={{
-                    backgroundColor: palette.innerCard,
-                    borderColor: palette.pageBorder,
-                  }}
-                  className="rounded-lg border p-4 mb-4"
-                >
-                  <Text
-                    style={{ color: palette.accent }}
-                    className="font-semibold mb-2 text-center text-sm tracking-wide"
-                  >
-                    ॐ हिंदी भावार्थ ॐ
-                  </Text>
-                  <Text
-                    style={{ color: palette.text }}
-                    className="text-[15px] leading-6 tracking-wide"
-                  >
-                    {verse.tej.ht}
-                  </Text>
-                </View>
-
-                {/* English Meaning */}
-                <View
-                  style={{
-                    backgroundColor: palette.innerCard,
-                    borderColor: palette.pageBorder,
-                  }}
-                  className="rounded-lg border p-4"
-                >
-                  <Text
-                    style={{ color: palette.accent }}
-                    className="font-semibold mb-2 text-center text-sm tracking-wide"
-                  >
-                    ॐ English Translation ॐ
-                  </Text>
-                  <Text
-                    style={{ color: palette.text }}
-                    className="text-[15px] leading-6 tracking-wide"
-                  >
-                    {verse.siva.et}
-                  </Text>
-                </View>
-
-                {/* Decorative Footer */}
-                <View className="items-center mt-2">
-                  <View
-                    style={{ backgroundColor: palette.accent }}
-                    className="w-10 h-0.5 rounded"
-                  />
-                </View>
-              </View>
+                </Animated.View>
+              </Animated.View>
             </Animated.View>
           </PanGestureHandler>
         </View>
-      </ScrollView>
+      </View>
     </LinearGradient>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  contentWrapper: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 90,
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  chapterText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  verseCountText: {
+    fontSize: 14,
+    marginTop: 4,
+    fontWeight: "500",
+  },
+  navigationHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 12,
+    gap: 8,
+  },
+  hintText: {
+    fontSize: 12,
+  },
+  pagesContainer: {
+    flex: 1,
+  },
+  gestureContainer: {
+    flex: 1,
+    position: "relative",
+  },
+  pageWrapper: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  currentPage: {
+    zIndex: 10,
+  },
+  underlyingPage: {
+    zIndex: 5,
+  },
+  pageContainer: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 2,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+    overflow: "hidden",
+  },
+  cardContent: {
+    flex: 1,
+  },
+  bookmark: {
+    position: "absolute",
+    top: -0.5,
+    right: 40,
+    width: 24,
+    height: 80,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cornerButton: {
+    position: "absolute",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 10,
+  },
+  leftCornerButton: {
+    top: -12,
+    left: -12,
+  },
+  rightCornerButton: {
+    top: -12,
+    right: -12,
+  },
+  cornerFold: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 0,
+    height: 0,
+    borderRightWidth: 30,
+    borderBottomWidth: 30,
+    borderBottomColor: "transparent",
+  },
+  verseSection: {
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    gap: 8,
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: "600",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+  },
+  sanskritText: {
+    fontSize: 26,
+    lineHeight: 42,
+    fontWeight: "600",
+    textAlign: "center",
+    letterSpacing: 0.5,
+  },
+  divider: {
+    height: 1,
+    marginVertical: 20,
+    opacity: 0.3,
+  },
+  meaningCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 16,
+  },
+  meaningTitle: {
+    fontWeight: "600",
+    marginBottom: 8,
+    textAlign: "center",
+    fontSize: 14,
+    letterSpacing: 0.5,
+  },
+  meaningText: {
+    fontSize: 15,
+    lineHeight: 24,
+    letterSpacing: 0.3,
+  },
+  footer: {
+    alignItems: "center",
+    marginTop: 8,
+  },
+  footerLine: {
+    width: 40,
+    height: 2,
+    borderRadius: 1,
+  },
+  // Page curl styles
+  curlOverlay: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    shadowOffset: { width: 8, height: 0 },
+    shadowRadius: 12,
+    elevation: 8,
+    overflow: "hidden",
+  },
+  curlOverlayRight: {
+    right: 0,
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  curlOverlayLeft: {
+    left: 0,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+  },
+  curlShadowGradientRight: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 40,
+  },
+  curlShadowGradientLeft: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 40,
+  },
+});
