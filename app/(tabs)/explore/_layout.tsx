@@ -1,6 +1,5 @@
 import { useTheme } from "@/context/ThemeContext";
 import { Stack } from "expo-router";
-import ThemedLayout from "@/components/ThemedLayout";
 
 export default function ExploreLayout() {
   const { isDarkMode } = useTheme();
@@ -9,33 +8,31 @@ export default function ExploreLayout() {
   const headerText = isDarkMode ? "#FFB59D" : "#8A4D24";
 
   return (
-    <ThemedLayout>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          headerStyle: { backgroundColor: headerBg },
-          headerTitleStyle: { color: headerText, fontWeight: "700" },
-          headerTintColor: headerText,
-          animation: "ios_from_right",
-          headerTitleAlign: "center",
-        }}
-      >
-        <Stack.Screen name="index" options={{ title: "Explore" }} />
-        <Stack.Screen
-          name="termsCondition"
-          options={{ title: "Terms & Conditions" }}
-        />
-        <Stack.Screen
-          name="privacyPolicy"
-          options={{ title: "Privacy Policy" }}
-        />
-        <Stack.Screen
-          name="contactSupport"
-          options={{ title: "Contact Support" }}
-        />
-        <Stack.Screen name="rateApp" options={{ title: "Rate App" }} />
-        <Stack.Screen name="about" options={{ title: "About US" }} />
-      </Stack>
-    </ThemedLayout>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        headerStyle: { backgroundColor: headerBg },
+        headerTitleStyle: { color: headerText, fontWeight: "700" },
+        headerTintColor: headerText,
+        animation: "ios_from_right",
+        headerTitleAlign: "center",
+      }}
+    >
+      <Stack.Screen name="index" options={{ title: "Explore" }} />
+      <Stack.Screen
+        name="termsCondition"
+        options={{ title: "Terms & Conditions" }}
+      />
+      <Stack.Screen
+        name="privacyPolicy"
+        options={{ title: "Privacy Policy" }}
+      />
+      <Stack.Screen
+        name="contactSupport"
+        options={{ title: "Contact Support" }}
+      />
+      <Stack.Screen name="rateApp" options={{ title: "Rate App" }} />
+      <Stack.Screen name="about" options={{ title: "About US" }} />
+    </Stack>
   );
 }
