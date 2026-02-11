@@ -68,7 +68,7 @@ export default function VerseDetails() {
       bookmark: "#C41E3A",
       curlOverlay: isDarkMode ? "#2A2630" : "#FFFFFF",
     }),
-    [isDarkMode]
+    [isDarkMode],
   );
 
   // ─── Load Verse ────────────────────────────────────────────────
@@ -76,8 +76,12 @@ export default function VerseDetails() {
     const data = await getSlok(chapterId, verseId);
     setVerse(data);
 
-    const fav = await AsyncStorage.getItem(`favorite_verse_${chapterId}_${verseId}`);
-    const read = await AsyncStorage.getItem(`read_verse_${chapterId}_${verseId}`);
+    const fav = await AsyncStorage.getItem(
+      `favorite_verse_${chapterId}_${verseId}`,
+    );
+    const read = await AsyncStorage.getItem(
+      `read_verse_${chapterId}_${verseId}`,
+    );
 
     setIsFavorite(fav === "true");
     setIsRead(read === "true");
@@ -109,7 +113,8 @@ export default function VerseDetails() {
 
   // ─── Change Verse ──────────────────────────────────────────────
   const changeVerse = async (direction: "next" | "prev") => {
-    const nextId = direction === "next" ? currentVerseId + 1 : currentVerseId - 1;
+    const nextId =
+      direction === "next" ? currentVerseId + 1 : currentVerseId - 1;
 
     if (nextId < 1 || nextId > versesCount) {
       translateX.value = withTiming(0, { duration: 300 });
@@ -146,7 +151,7 @@ export default function VerseDetails() {
       translateX.value = withTiming(
         translateX.value < 0 ? -SCREEN_WIDTH : SCREEN_WIDTH,
         { duration: 350 },
-        () => runOnJS(changeVerse)(dir)
+        () => runOnJS(changeVerse)(dir),
       );
     } else {
       translateX.value = withTiming(0, { duration: 300 });
@@ -163,7 +168,7 @@ export default function VerseDetails() {
       translateX.value,
       [0, -SCREEN_WIDTH / 2],
       [0, 1],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     );
     return { opacity };
   });
@@ -173,7 +178,7 @@ export default function VerseDetails() {
       translateX.value,
       [0, SCREEN_WIDTH / 2],
       [0, 1],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     );
     return { opacity };
   });
@@ -186,21 +191,21 @@ export default function VerseDetails() {
       Math.abs(translateX.value),
       [0, SCREEN_WIDTH],
       [0, SCREEN_WIDTH],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     );
 
     const overlayOpacity = interpolate(
       Math.abs(translateX.value),
       [0, SCREEN_WIDTH * 0.2],
       [0, 0.95],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     );
 
     const shadowOpacity = interpolate(
       Math.abs(translateX.value),
       [0, SCREEN_WIDTH * 0.5],
       [0, 0.6],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     );
 
     return { opacity: overlayOpacity, width: overlayWidth, shadowOpacity };
@@ -214,21 +219,21 @@ export default function VerseDetails() {
       Math.abs(translateX.value),
       [0, SCREEN_WIDTH],
       [0, SCREEN_WIDTH],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     );
 
     const overlayOpacity = interpolate(
       Math.abs(translateX.value),
       [0, SCREEN_WIDTH * 0.2],
       [0, 0.95],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     );
 
     const shadowOpacity = interpolate(
       Math.abs(translateX.value),
       [0, SCREEN_WIDTH * 0.5],
       [0, 0.6],
-      Extrapolate.CLAMP
+      Extrapolate.CLAMP,
     );
 
     return { opacity: overlayOpacity, width: overlayWidth, shadowOpacity };
@@ -251,12 +256,16 @@ export default function VerseDetails() {
     setIsRead(v);
     await AsyncStorage.setItem(
       `read_verse_${chapterId}_${currentVerseId}`,
-      v.toString()
+      v.toString(),
     );
   };
 
   // ─── Render Verse Card ─────────────────────────────────────────
-  const renderVerseCard = (verseData: any, verseId: number, isCurrent = false) => {
+  const renderVerseCard = (
+    verseData: any,
+    verseId: number,
+    isCurrent = false,
+  ) => {
     if (!verseData) return null;
 
     return (
@@ -271,7 +280,9 @@ export default function VerseDetails() {
       >
         {/* Bookmark Ribbon */}
         {isCurrent && isFavorite && (
-          <View style={[styles.bookmark, { backgroundColor: palette.bookmark }]} />
+          <View
+            style={[styles.bookmark, { backgroundColor: palette.bookmark }]}
+          />
         )}
 
         {/* Favorite Button */}
@@ -281,7 +292,10 @@ export default function VerseDetails() {
             style={[
               styles.cornerButton,
               styles.leftCornerButton,
-              { backgroundColor: palette.buttonBg, borderColor: palette.pageBorder },
+              {
+                backgroundColor: palette.buttonBg,
+                borderColor: palette.pageBorder,
+              },
             ]}
             activeOpacity={0.7}
           >
@@ -301,7 +315,10 @@ export default function VerseDetails() {
             style={[
               styles.cornerButton,
               styles.rightCornerButton,
-              { backgroundColor: palette.buttonBg, borderColor: palette.pageBorder },
+              {
+                backgroundColor: palette.buttonBg,
+                borderColor: palette.pageBorder,
+              },
             ]}
             activeOpacity={0.7}
           >
@@ -314,35 +331,73 @@ export default function VerseDetails() {
         )}
 
         {/* Page Corner Fold */}
-        <View style={[styles.cornerFold, { borderRightColor: palette.pageBorder }]} />
+        <View
+          style={[styles.cornerFold, { borderRightColor: palette.pageBorder }]}
+        />
 
         {/* Content */}
-        <ScrollView style={styles.cardContent} showsVerticalScrollIndicator={false} bounces={false}>
+        <ScrollView
+          style={styles.cardContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          contentInsetAdjustmentBehavior="never"
+          automaticallyAdjustContentInsets={false}
           <View style={styles.verseSection}>
             <View style={styles.sectionHeader}>
-              <View style={[styles.dot, { backgroundColor: palette.accentLight }]} />
+              <View
+                style={[styles.dot, { backgroundColor: palette.accentLight }]}
+              />
               <Text style={[styles.sectionTitle, { color: palette.accent }]}>
                 संस्कृत श्लोक
               </Text>
-              <View style={[styles.dot, { backgroundColor: palette.accentLight }]} />
+              <View
+                style={[styles.dot, { backgroundColor: palette.accentLight }]}
+              />
             </View>
-            <Text style={[styles.sanskritText, { color: palette.text }]}>{verseData.slok}</Text>
+            <Text style={[styles.sanskritText, { color: palette.text }]}>
+              {verseData.slok}
+            </Text>
           </View>
-
-          <View style={[styles.divider, { backgroundColor: palette.pageBorder }]} />
-
-          <View style={[styles.meaningCard, { backgroundColor: palette.innerCard, borderColor: palette.pageBorder }]}>
-            <Text style={[styles.meaningTitle, { color: palette.accent }]}>ॐ हिंदी भावार्थ ॐ</Text>
-            <Text style={[styles.meaningText, { color: palette.text }]}>{verseData.tej.ht}</Text>
+          <View
+            style={[styles.divider, { backgroundColor: palette.pageBorder }]}
+          />
+          <View
+            style={[
+              styles.meaningCard,
+              {
+                backgroundColor: palette.innerCard,
+                borderColor: palette.pageBorder,
+              },
+            ]}
+          >
+            <Text style={[styles.meaningTitle, { color: palette.accent }]}>
+              ॐ हिंदी भावार्थ ॐ
+            </Text>
+            <Text style={[styles.meaningText, { color: palette.text }]}>
+              {verseData.tej.ht}
+            </Text>
           </View>
-
-          <View style={[styles.meaningCard, { backgroundColor: palette.innerCard, borderColor: palette.pageBorder }]}>
-            <Text style={[styles.meaningTitle, { color: palette.accent }]}>ॐ English Translation ॐ</Text>
-            <Text style={[styles.meaningText, { color: palette.text }]}>{verseData.siva.et}</Text>
+          <View
+            style={[
+              styles.meaningCard,
+              {
+                backgroundColor: palette.innerCard,
+                borderColor: palette.pageBorder,
+              },
+            ]}
+          >
+            <Text style={[styles.meaningTitle, { color: palette.accent }]}>
+              ॐ English Translation ॐ
+            </Text>
+            <Text style={[styles.meaningText, { color: palette.text }]}>
+              {verseData.siva.et}
+            </Text>
           </View>
-
           <View style={styles.footer}>
-            <View style={[styles.footerLine, { backgroundColor: palette.accent }]} />
+            <View
+              style={[styles.footerLine, { backgroundColor: palette.accent }]}
+            />
           </View>
         </ScrollView>
       </View>
@@ -351,15 +406,20 @@ export default function VerseDetails() {
 
   if (loading || !verse) {
     return (
-      <LinearGradient colors={palette.gradient as [string, string]} style={styles.loaderContainer}>
+      <LinearGradient
+        colors={palette.gradient as [string, string]}
+        style={styles.loaderContainer}
+      >
         <MaterialLoader size="large" />
       </LinearGradient>
     );
   }
 
   return (
-    <LinearGradient colors={palette.gradient as [string, string]} style={styles.container}>
-
+    <LinearGradient
+      colors={palette.gradient as [string, string]}
+      style={styles.container}
+    >
       <View style={styles.contentWrapper}>
         {/* Header */}
         <View style={styles.header}>
@@ -371,7 +431,9 @@ export default function VerseDetails() {
           </Text>
           <View style={styles.navigationHint}>
             <ChevronLeft color={palette.muted} size={16} />
-            <Text style={[styles.hintText, { color: palette.muted }]}>Swipe to turn pages</Text>
+            <Text style={[styles.hintText, { color: palette.muted }]}>
+              Swipe to turn pages
+            </Text>
             <ChevronRight color={palette.muted} size={16} />
           </View>
         </View>
@@ -388,7 +450,11 @@ export default function VerseDetails() {
               {/* Previous page (shown when swiping right) */}
               {prevVerse && (
                 <Animated.View
-                  style={[styles.pageWrapper, styles.underlyingPage, prevPageAnimatedStyle]}
+                  style={[
+                    styles.pageWrapper,
+                    styles.underlyingPage,
+                    prevPageAnimatedStyle,
+                  ]}
                 >
                   {renderVerseCard(prevVerse, currentVerseId - 1)}
                 </Animated.View>
@@ -397,7 +463,11 @@ export default function VerseDetails() {
               {/* Next page (shown when swiping left) */}
               {nextVerse && (
                 <Animated.View
-                  style={[styles.pageWrapper, styles.underlyingPage, nextPageAnimatedStyle]}
+                  style={[
+                    styles.pageWrapper,
+                    styles.underlyingPage,
+                    nextPageAnimatedStyle,
+                  ]}
                 >
                   {renderVerseCard(nextVerse, currentVerseId + 1)}
                 </Animated.View>
@@ -405,7 +475,11 @@ export default function VerseDetails() {
 
               {/* Current page */}
               <Animated.View
-                style={[styles.pageWrapper, styles.currentPage, currentPageAnimatedStyle]}
+                style={[
+                  styles.pageWrapper,
+                  styles.currentPage,
+                  currentPageAnimatedStyle,
+                ]}
               >
                 {renderVerseCard(verse, currentVerseId, true)}
 
@@ -414,7 +488,10 @@ export default function VerseDetails() {
                   style={[
                     styles.curlOverlay,
                     styles.curlOverlayRight,
-                    { backgroundColor: palette.curlOverlay, shadowColor: "#000" },
+                    {
+                      backgroundColor: palette.curlOverlay,
+                      shadowColor: "#000",
+                    },
                     curlOverlayRightStyle,
                   ]}
                   pointerEvents="none"
@@ -432,7 +509,10 @@ export default function VerseDetails() {
                   style={[
                     styles.curlOverlay,
                     styles.curlOverlayLeft,
-                    { backgroundColor: palette.curlOverlay, shadowColor: "#000" },
+                    {
+                      backgroundColor: palette.curlOverlay,
+                      shadowColor: "#000",
+                    },
                     curlOverlayLeftStyle,
                   ]}
                   pointerEvents="none"

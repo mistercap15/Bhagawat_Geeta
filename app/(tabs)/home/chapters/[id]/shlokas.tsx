@@ -1,9 +1,4 @@
-import {
-  ScrollView,
-  View,
-  Text,
-  TouchableOpacity,
-} from "react-native";
+import { ScrollView, View, Text, TouchableOpacity } from "react-native";
 import { useCallback, useState } from "react";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -49,7 +44,7 @@ export default function ShlokasScreen() {
       setVerses(
         Array.from({ length: versesCount }, (_, index) => ({
           verse_number: index + 1,
-        }))
+        })),
       );
     } catch (error) {
       console.error("Error fetching chapter or verses:", error);
@@ -64,12 +59,14 @@ export default function ShlokasScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchChapterData();
-    }, [id])
+    }, [id]),
   );
 
   if (loading || !chapter) {
     return (
-      <View className={`flex-1 justify-center items-center ${isDarkMode ? "bg-[#1C1B1F]" : "bg-[#FFF8F1]"}`}>
+      <View
+        className={`flex-1 justify-center items-center ${isDarkMode ? "bg-[#1C1B1F]" : "bg-[#FFF8F1]"}`}
+      >
         <MaterialLoader size="large" />
         <Text className={`mt-2 ${textColor}`}>
           {error ? "Missing local chapter data." : "Loading chapter..."}
@@ -84,6 +81,8 @@ export default function ShlokasScreen() {
       className="flex-1"
     >
       <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
         className="px-6 pt-6"
         contentContainerStyle={{ paddingBottom: 90 }}
         scrollEventThrottle={16}
@@ -111,7 +110,7 @@ export default function ShlokasScreen() {
             key={verse.verse_number}
             onPress={() =>
               router.push(
-                `/home/chapters/${id}/${verse.verse_number}?verses_count=${chapter.verses_count}`
+                `/home/chapters/${id}/${verse.verse_number}?verses_count=${chapter.verses_count}`,
               )
             }
             className={`rounded-3xl p-5 mb-4 ${sectionBg}`}

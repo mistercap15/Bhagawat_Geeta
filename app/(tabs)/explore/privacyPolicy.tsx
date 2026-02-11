@@ -14,18 +14,22 @@ const PrivacyPolicy = () => {
       className="flex-1"
     >
       <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
         className="flex-1 px-6 py-8"
         scrollEventThrottle={16}
       >
-        <Text className={`text-2xl font-bold mb-4 ${textColor}`}>Privacy Policy</Text>
+        <Text className={`text-2xl font-bold mb-4 ${textColor}`}>
+          Privacy Policy
+        </Text>
         <Text className={`text-base leading-relaxed ${subTextColor}`}>
           This Bhagavad Gita app does not collect, store, or share any personal
           user data. We believe in a distraction-free, respectful spiritual
           experience. No ads, no tracking, no intrusive permissions.
           {"\n\n"}
-          Your usage of this app is entirely private. We do not collect analytics
-          or log your data. All features work fully offline (except external
-          links, if any).
+          Your usage of this app is entirely private. We do not collect
+          analytics or log your data. All features work fully offline (except
+          external links, if any).
           {"\n\n"}
           Your privacy is sacred — just like the message of the Gita.
         </Text>

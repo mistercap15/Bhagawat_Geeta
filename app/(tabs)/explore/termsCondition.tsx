@@ -14,6 +14,8 @@ const TermsAndConditions = () => {
       className="flex-1"
     >
       <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
         className="flex-1 px-6 py-8"
         scrollEventThrottle={16}
       >

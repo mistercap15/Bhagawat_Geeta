@@ -23,14 +23,12 @@ export default function ThemedLayout({ children }: ThemedLayoutProps) {
     // Android bottom navigation bar
     if (Platform.OS === "android") {
       NavigationBar.setBackgroundColorAsync(bgColor);
-      NavigationBar.setButtonStyleAsync(
-        isDarkMode ? "light" : "dark"
-      );
+      NavigationBar.setButtonStyleAsync(isDarkMode ? "light" : "dark");
     }
   }, [bgColor, isDarkMode]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }} edges={["top"]}>
       <StatusBar
         style={statusStyle}
         backgroundColor={bgColor}

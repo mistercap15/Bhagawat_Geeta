@@ -1,9 +1,4 @@
-import {
-  ScrollView,
-  TouchableOpacity,
-  View,
-  Text,
-} from "react-native";
+import { ScrollView, TouchableOpacity, View, Text } from "react-native";
 import { BookOpen } from "lucide-react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { ProgressBar } from "react-native-paper";
@@ -47,7 +42,7 @@ export default function ChaptersScreen() {
             readCount,
             progress,
           };
-        })
+        }),
       );
 
       setChapters(updatedChapters);
@@ -61,12 +56,14 @@ export default function ChaptersScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchChapters();
-    }, [])
+    }, []),
   );
 
   if (loading) {
     return (
-      <View className={`flex-1 justify-center items-center ${isDarkMode ? "bg-[#1C1B1F]" : "bg-[#FFF8F1]"}`}>
+      <View
+        className={`flex-1 justify-center items-center ${isDarkMode ? "bg-[#1C1B1F]" : "bg-[#FFF8F1]"}`}
+      >
         <MaterialLoader size="large" />
         <Text className={`mt-2 ${textColor}`}>Loading chapters...</Text>
       </View>
@@ -79,18 +76,24 @@ export default function ChaptersScreen() {
       className="flex-1"
     >
       <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
         className="p-2 px-6"
         contentContainerStyle={{ paddingBottom: 90 }}
         scrollEventThrottle={16}
       >
-        <Text className={`text-3xl font-bold mb-5 mt-3 ${textColor}`}>📖 All Chapters</Text>
+        <Text className={`text-3xl font-bold mb-5 mt-3 ${textColor}`}>
+          📖 All Chapters
+        </Text>
 
         {chapters.map((chapter) => (
           <TouchableOpacity
             key={chapter.chapter_number}
             className={`${cardBg} rounded-3xl p-4 mb-4 border border-[#E8D5C4]`}
             onPress={() =>
-              router.push(`/(tabs)/home/chapters/${chapter.chapter_number}/shlokas`)
+              router.push(
+                `/(tabs)/home/chapters/${chapter.chapter_number}/shlokas`,
+              )
             }
           >
             <View className="flex-row items-center">
@@ -101,8 +104,12 @@ export default function ChaptersScreen() {
                 <Text className={`text-lg font-semibold ${textColor}`}>
                   Chapter {chapter.chapter_number}: {chapter.name}
                 </Text>
-                <Text className={`text-sm ${textMeaningColor}`}>{chapter.meaning.en}</Text>
-                <Text className={`text-sm ${textMeaningColor}`}>{chapter.meaning.hi}</Text>
+                <Text className={`text-sm ${textMeaningColor}`}>
+                  {chapter.meaning.en}
+                </Text>
+                <Text className={`text-sm ${textMeaningColor}`}>
+                  {chapter.meaning.hi}
+                </Text>
               </View>
             </View>
 
@@ -110,7 +117,11 @@ export default function ChaptersScreen() {
               <ProgressBar
                 progress={chapter.progress}
                 color={isDarkMode ? "#D0BCFF" : "#8A4D24"}
-                style={{ height: 10, borderRadius: 10, backgroundColor: isDarkMode ? "#4A4458" : "#F8E7DA" }}
+                style={{
+                  height: 10,
+                  borderRadius: 10,
+                  backgroundColor: isDarkMode ? "#4A4458" : "#F8E7DA",
+                }}
               />
               <Text className={`text-sm mt-1 text-right ${textMeaningColor}`}>
                 {Math.round(chapter.progress * 100)}% Read

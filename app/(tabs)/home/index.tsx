@@ -102,53 +102,52 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-const shareShloka = async () => {
-  try {
-    if (!viewRef.current) {
+  const shareShloka = async () => {
+    try {
+      if (!viewRef.current) {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "View not ready to share",
+        });
+        return;
+      }
+
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Toast.show({
+          type: "error",
+          text1: "Sharing not supported",
+        });
+        return;
+      }
+
+      // ⏳ Ensure layout & fonts are fully rendered
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      const uri = await captureRef(viewRef, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+      });
+
+      await Sharing.shareAsync(uri);
+
+      Toast.show({
+        type: "success",
+        text1: "Shloka Shared!",
+        text2: "Ready to inspire others 📜",
+      });
+    } catch (error) {
+      console.error("Share error:", error);
+
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "View not ready to share",
+        text2: "Something went wrong while sharing 😔",
       });
-      return;
     }
-
-    const isAvailable = await Sharing.isAvailableAsync();
-    if (!isAvailable) {
-      Toast.show({
-        type: "error",
-        text1: "Sharing not supported",
-      });
-      return;
-    }
-
-    // ⏳ Ensure layout & fonts are fully rendered
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    const uri = await captureRef(viewRef, {
-      format: "png",
-      quality: 1,
-      result: "tmpfile",
-    });
-
-    await Sharing.shareAsync(uri);
-
-    Toast.show({
-      type: "success",
-      text1: "Shloka Shared!",
-      text2: "Ready to inspire others 📜",
-    });
-  } catch (error) {
-    console.error("Share error:", error);
-
-    Toast.show({
-      type: "error",
-      text1: "Error",
-      text2: "Something went wrong while sharing 😔",
-    });
-  }
-};
-
+  };
 
   return (
     <GestureHandlerRootView className="flex-1">
@@ -157,6 +156,8 @@ const shareShloka = async () => {
         className="flex-1"
       >
         <ScrollView
+          contentInsetAdjustmentBehavior="never"
+          automaticallyAdjustContentInsets={false}
           scrollEventThrottle={16}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -184,7 +185,7 @@ const shareShloka = async () => {
 
           <View
             ref={viewRef}
-            collapsable={false} 
+            collapsable={false}
             className={`mx-5 ${cardBg} rounded-[28px] p-6 mb-6 border border-[#E8D5C4]`}
           >
             <View className="flex-row items-center justify-between mb-3">

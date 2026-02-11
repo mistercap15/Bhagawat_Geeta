@@ -36,14 +36,14 @@ export default function FavoritesScreen() {
           favVerseInfos.map(async ([chapter, verse]) => {
             const slok = await getSlok(chapter, verse);
             const chapterMeta = chapters.find(
-              (c: any) => String(c.chapter_number) === String(chapter)
+              (c: any) => String(c.chapter_number) === String(chapter),
             );
 
             return {
               ...slok,
               verses_count: chapterMeta?.verses_count ?? 0,
             };
-          })
+          }),
         );
 
         setFavorites(results.filter(Boolean));
@@ -88,7 +88,12 @@ export default function FavoritesScreen() {
       colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
       className="flex-1"
     >
-      <ScrollView className="p-4" scrollEventThrottle={16}>
+      <ScrollView
+        className="p-4"
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
+        scrollEventThrottle={16}
+      >
         {favorites.map((verse, index) => (
           <TouchableOpacity
             key={`${verse.chapter}_${verse.verse}_${index}`}

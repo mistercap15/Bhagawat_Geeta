@@ -41,6 +41,8 @@ const Explore = () => {
       className="flex-1"
     >
       <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
         className="flex-1 px-6 py-5"
         contentContainerStyle={{ paddingBottom: 40 }}
         scrollEventThrottle={16}
@@ -54,7 +56,9 @@ const Explore = () => {
           className={`p-4 rounded-2xl mb-6 ${sectionBg} flex-row justify-between items-center border border-[#E8D5C4]`}
         >
           <View>
-            <Text className={`text-lg font-semibold ${textColor}`}>Dark Mode</Text>
+            <Text className={`text-lg font-semibold ${textColor}`}>
+              Dark Mode
+            </Text>
             <Text className={`text-xs mt-1 ${subTextColor}`}>
               Toggle light and dark appearance
             </Text>
@@ -73,7 +77,9 @@ const Explore = () => {
             className={`p-4 rounded-2xl mb-4 ${sectionBg} border border-[#E8D5C4]`}
             onPress={item.onPress}
           >
-            <Text className={`text-lg font-medium ${textColor}`}>{item.label}</Text>
+            <Text className={`text-lg font-medium ${textColor}`}>
+              {item.label}
+            </Text>
           </TouchableOpacity>
         ))}
 
@@ -95,13 +101,13 @@ const Explore = () => {
                     } catch (error) {
                       Alert.alert(
                         "Error",
-                        "Something went wrong while clearing data."
+                        "Something went wrong while clearing data.",
                       );
                       console.error("Clear AsyncStorage error:", error);
                     }
                   },
                 },
-              ]
+              ],
             );
           }}
         >
