@@ -10,7 +10,6 @@ export default function ExploreLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: false,
         headerStyle: { backgroundColor: headerBg },
         headerTitleStyle: { color: headerText, fontWeight: "700" },
         headerTintColor: headerText,
@@ -18,21 +17,18 @@ export default function ExploreLayout() {
         headerTitleAlign: "center",
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Explore" }} />
       <Stack.Screen
-        name="termsCondition"
-        options={{ title: "Terms & Conditions" }}
+        name="index"
+        options={{
+          title: "Explore",
+          headerShown: false,
+        }}
       />
-      <Stack.Screen
-        name="privacyPolicy"
-        options={{ title: "Privacy Policy" }}
-      />
-      <Stack.Screen
-        name="contactSupport"
-        options={{ title: "Contact Support" }}
-      />
+      <Stack.Screen name="termsCondition" options={{ title: "Terms & Conditions" }} />
+      <Stack.Screen name="privacyPolicy" options={{ title: "Privacy Policy" }} />
+      <Stack.Screen name="contactSupport" options={{ title: "Contact Support" }} />
       <Stack.Screen name="rateApp" options={{ title: "Rate App" }} />
-      <Stack.Screen name="about" options={{ title: "About US" }} />
+      <Stack.Screen name="about" options={{ title: "About Us" }} />
     </Stack>
   );
 }

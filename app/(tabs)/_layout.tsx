@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useSafeAreaInsets,SafeAreaProvider } from "react-native-safe-area-context";
 
 const DAILY_NOTIFICATION_KEY = "daily-gita-notification";
 
@@ -21,15 +22,18 @@ Notifications.setNotificationHandler({
 export default function Layout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
       <ThemeProvider>
         <LayoutContent />
       </ThemeProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
 
 function LayoutContent() {
   const { isDarkMode } = useTheme();
+const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const scheduleDailyNotification = async () => {
@@ -42,8 +46,7 @@ function LayoutContent() {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Morning Gita Reflection",
-          body:
-            "Begin your day with a verse of wisdom. Open the Gita and find your शांत क्षण today.",
+          body: "Begin your day with a verse of wisdom. Open the Gita and find your शांत क्षण today.",
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
@@ -83,8 +86,10 @@ function LayoutContent() {
             tabBarStyle: {
               position: "absolute",
               marginHorizontal: 16,
-              marginBottom: 10,
-              height: 62,
+              marginBottom: insets.bottom > 0 ? insets.bottom : 10,
+              height: 62 + insets.bottom,
+              paddingBottom: insets.bottom,
+
               borderRadius: 32,
 
               backgroundColor: isDarkMode
@@ -105,9 +110,7 @@ function LayoutContent() {
             name="home"
             options={{
               title: "Home",
-              tabBarIcon: ({ color }) => (
-                <HomeIcon color={color} size={20} />
-              ),
+              tabBarIcon: ({ color }) => <HomeIcon color={color} size={20} />,
             }}
           />
 
@@ -115,9 +118,7 @@ function LayoutContent() {
             name="explore"
             options={{
               title: "Explore",
-              tabBarIcon: ({ color }) => (
-                <SearchIcon color={color} size={20} />
-              ),
+              tabBarIcon: ({ color }) => <SearchIcon color={color} size={20} />,
             }}
           />
         </Tabs>

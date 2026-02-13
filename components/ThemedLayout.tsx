@@ -28,7 +28,10 @@ export default function ThemedLayout({ children }: ThemedLayoutProps) {
   }, [bgColor, isDarkMode]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }} edges={["top"]}>
+   <SafeAreaView
+  style={{ flex: 1, backgroundColor: bgColor }}
+  edges={["top", "bottom"]}
+>
       <StatusBar
         style={statusStyle}
         backgroundColor={bgColor}

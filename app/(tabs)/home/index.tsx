@@ -150,7 +150,8 @@ export default function HomeScreen() {
   };
 
   return (
-    <GestureHandlerRootView className="flex-1">
+    // <GestureHandlerRootView className="flex-1">
+    <>
       <LinearGradient
         colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
         className="flex-1"
@@ -326,6 +327,7 @@ export default function HomeScreen() {
           This feature is still in development. It will be available soon.
         </Text>
       </ActionSheet>
-    </GestureHandlerRootView>
+      </>
+    // </GestureHandlerRootView>
   );
 }
