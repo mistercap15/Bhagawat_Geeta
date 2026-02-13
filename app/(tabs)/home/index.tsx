@@ -10,7 +10,6 @@ import {
 import { useTheme } from "@/context/ThemeContext";
 import {
   Share2,
-  BookText,
   BookOpen,
   Star,
   Headphones,
@@ -23,9 +22,6 @@ import { getSlok } from "@/utils/gitaData";
 import * as Sharing from "expo-sharing";
 import { captureRef } from "react-native-view-shot";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import ActionSheet, { ActionSheetRef } from "react-native-actions-sheet";
-import { Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialLoader from "@/components/MaterialLoader";
 import homeLogo from "../../../assets/images/splashScreen.png";
@@ -39,21 +35,15 @@ export default function HomeScreen() {
   const textColor = isDarkMode ? "text-[#E8DEF8]" : "text-[#3E2723]";
   const subTextColor = isDarkMode ? "text-[#CAC4D0]" : "text-[#625B71]";
   const cardBg = isDarkMode ? "bg-[#2B2930]" : "bg-[#FFFDF9]";
-  const screenHeight = Dimensions.get("window").height;
   const viewRef = useRef<any>(null);
-  const actionSheetRef = useRef<ActionSheetRef>(null);
-
-  const handlePresentModalPress = () => {
-    actionSheetRef.current?.show();
-  };
 
   const fetchShloka = async () => {
     setLoading(true);
     setError(false);
     const randomChapter = Math.floor(Math.random() * 18) + 1;
-    const versesCount: any = {
+    const versesCount: Record<number, number> = {
       1: 47,
-      2: 47,
+      2: 72,
       3: 43,
       4: 42,
       5: 29,
@@ -253,19 +243,17 @@ export default function HomeScreen() {
                 icon: <Headphones size={24} color="#8A4D24" />,
                 title: "Audio Recitations",
                 desc: "Sanskrit chants and guided listening",
-                onPress: handlePresentModalPress,
+                onPress: () => router.push("/(tabs)/home/audio-recitation"),
                 color: "bg-[#FFEAD7]",
-                soon: true,
               },
               {
                 icon: <Sun size={24} color="#8A4D24" />,
                 title: "Daily Practice",
                 desc: "Build a mindful reading routine",
-                onPress: handlePresentModalPress,
+                onPress: () => router.push("/(tabs)/home/daily-practice"),
                 color: "bg-[#FFEAD7]",
-                soon: true,
               },
-            ].map((item, index) => (
+            ].map((item: any, index) => (
               <Animated.View
                 key={item.title}
                 entering={FadeInDown.duration(1100 + index * 200)}
@@ -286,13 +274,6 @@ export default function HomeScreen() {
                       {item.desc}
                     </Text>
                   </View>
-                  {item.soon && (
-                    <View className="bg-[#EADDFF] px-2 py-1 rounded-full">
-                      <Text className="text-xs text-[#4A4458] font-semibold">
-                        Coming Soon
-                      </Text>
-                    </View>
-                  )}
                 </TouchableOpacity>
               </Animated.View>
             ))}
@@ -308,26 +289,6 @@ export default function HomeScreen() {
           </Animated.View>
         </ScrollView>
       </LinearGradient>
-      <ActionSheet
-        ref={actionSheetRef}
-        gestureEnabled={true}
-        containerStyle={{
-          backgroundColor: isDarkMode ? "#2B2930" : "#FFFDF9",
-          minHeight: screenHeight * 0.15,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-        }}
-      >
-        <Text
-          style={{
-            color: isDarkMode ? "#E8DEF8" : "#3E2723",
-          }}
-          className="text-center p-8 text-base"
-        >
-          This feature is still in development. It will be available soon.
-        </Text>
-      </ActionSheet>
-      </>
-    // </GestureHandlerRootView>
+    </>
   );
 }

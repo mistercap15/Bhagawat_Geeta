@@ -5,11 +5,12 @@ import ThemedLayout from "@/components/ThemedLayout";
 import Toast from "react-native-toast-message";
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useSafeAreaInsets,SafeAreaProvider } from "react-native-safe-area-context";
-
-const DAILY_NOTIFICATION_KEY = "daily-gita-notification";
+import {
+  useSafeAreaInsets,
+  SafeAreaProvider,
+} from "react-native-safe-area-context";
+import { setupDailyReminder } from "@/utils/notifications";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -22,10 +23,10 @@ Notifications.setNotificationHandler({
 export default function Layout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
-      <ThemeProvider>
-        <LayoutContent />
-      </ThemeProvider>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <LayoutContent />
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -33,33 +34,10 @@ export default function Layout() {
 
 function LayoutContent() {
   const { isDarkMode } = useTheme();
-const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    const scheduleDailyNotification = async () => {
-      const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== "granted") return;
-
-      const existing = await AsyncStorage.getItem(DAILY_NOTIFICATION_KEY);
-      if (existing === "true") return;
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Morning Gita Reflection",
-          body: "Begin your day with a verse of wisdom. Open the Gita and find your शांत क्षण today.",
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-          hour: 7,
-          minute: 30,
-          repeats: true,
-        },
-      });
-
-      await AsyncStorage.setItem(DAILY_NOTIFICATION_KEY, "true");
-    };
-
-    scheduleDailyNotification();
+    setupDailyReminder();
   }, []);
 
   return (
