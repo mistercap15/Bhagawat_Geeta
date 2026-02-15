@@ -1,29 +1,27 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  Text,
+  View,
+  FlatList,
+  TouchableOpacity,
+} from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { sendPracticeCompleteNotification } from "@/utils/notifications";
 
-const PRACTICE_KEY = "daily-practice-progress";
-const STREAK_KEY = "daily-practice-streak";
+const TARGET_KEY = "daily_target";
+const LOG_KEY = "daily_read_log";
+const DEFAULT_TARGET = 3;
 
 const getTodayKey = () => new Date().toISOString().split("T")[0];
 
-type DailyProgress = {
-  date: string;
-  done: number;
-  target: number;
-};
-
 export default function DailyPracticeScreen() {
   const { isDarkMode } = useTheme();
-  const [progress, setProgress] = useState<DailyProgress>({
-    date: getTodayKey(),
-    done: 0,
-    target: 3,
-  });
+  const [todayCount, setTodayCount] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [target, setTarget] = useState(DEFAULT_TARGET);
 
   const palette = useMemo(
     () => ({
@@ -35,94 +33,211 @@ export default function DailyPracticeScreen() {
       accent: "#8A4D24",
       success: "#2E7D32",
     }),
-    [isDarkMode],
+    [isDarkMode]
   );
+
+  const calculateStreak = (log: any, currentTarget: number) => {
+    const dates = Object.keys(log).sort().reverse();
+    let currentStreak = 0;
+
+    for (let date of dates) {
+      if (log[date].length >= currentTarget) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+
+    return currentStreak;
+  };
 
   const load = useCallback(async () => {
     const today = getTodayKey();
-    const rawProgress = await AsyncStorage.getItem(PRACTICE_KEY);
-    const rawStreak = await AsyncStorage.getItem(STREAK_KEY);
 
-    if (rawStreak) {
-      setStreak(Number(rawStreak));
+    const rawLog = await AsyncStorage.getItem(LOG_KEY);
+    const rawTarget = await AsyncStorage.getItem(TARGET_KEY);
+
+    const parsedLog = rawLog ? JSON.parse(rawLog) : {};
+    const savedTarget = rawTarget ? Number(rawTarget) : DEFAULT_TARGET;
+
+    setTarget(savedTarget);
+
+    const todayReads = parsedLog[today] || [];
+    const count = todayReads.length;
+
+    setTodayCount(count);
+
+    const streakValue = calculateStreak(parsedLog, savedTarget);
+    setStreak(streakValue);
+
+    // 🔔 Trigger completion notification once
+    if (count >= savedTarget) {
+      await sendPracticeCompleteNotification();
     }
-
-    if (!rawProgress) {
-      setProgress({ date: today, done: 0, target: 3 });
-      return;
-    }
-
-    const parsed = JSON.parse(rawProgress) as DailyProgress;
-    if (parsed.date !== today) {
-      const wasComplete = parsed.done >= parsed.target;
-      const nextStreak = wasComplete ? Number(rawStreak || 0) + 1 : 0;
-      setStreak(nextStreak);
-      await AsyncStorage.setItem(STREAK_KEY, String(nextStreak));
-      const reset = { date: today, done: 0, target: parsed.target || 3 };
-      setProgress(reset);
-      await AsyncStorage.setItem(PRACTICE_KEY, JSON.stringify(reset));
-      return;
-    }
-
-    setProgress(parsed);
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load]),
+    }, [load])
   );
 
-  const updateProgress = async (next: DailyProgress) => {
-    setProgress(next);
-    await AsyncStorage.setItem(PRACTICE_KEY, JSON.stringify(next));
-    if (next.done === next.target) {
-      await sendPracticeCompleteNotification();
-    }
+  const updateTarget = async (value: number) => {
+    setTarget(value);
+    await AsyncStorage.setItem(TARGET_KEY, String(value));
   };
 
-  const percent = Math.min(100, Math.round((progress.done / progress.target) * 100));
+  const percent = Math.min(100, Math.round((todayCount / target) * 100));
+  const numbers = Array.from({ length: 20 }, (_, i) => i + 1);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: palette.background }} contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
-      <Text style={{ color: palette.text, fontSize: 24, fontWeight: "700", marginBottom: 6 }}>Daily Practice</Text>
-      <Text style={{ color: palette.subText, marginBottom: 16 }}>
-        Build consistency by completing a small daily verse target.
+    <ScrollView
+      style={{ flex: 1, backgroundColor: palette.background }}
+      contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+    >
+      <Text
+        style={{
+          color: palette.text,
+          fontSize: 24,
+          fontWeight: "700",
+          marginBottom: 6,
+        }}
+      >
+        🌅 Daily Reading Mission
       </Text>
 
-      <View style={{ backgroundColor: palette.card, borderRadius: 18, borderWidth: 1, borderColor: palette.border, padding: 16, marginBottom: 14 }}>
+      <Text style={{ color: palette.subText, marginBottom: 20 }}>
+        Set your personal daily verse goal and build consistency.
+      </Text>
+
+      <View
+        style={{
+          backgroundColor: palette.card,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: palette.border,
+          padding: 16,
+          marginBottom: 20,
+        }}
+      >
         <Text style={{ color: palette.subText }}>Current streak</Text>
-        <Text style={{ color: palette.accent, fontSize: 32, fontWeight: "800" }}>{streak} days 🔥</Text>
+        <Text
+          style={{
+            color: palette.accent,
+            fontSize: 32,
+            fontWeight: "800",
+          }}
+        >
+          {streak} days 🔥
+        </Text>
       </View>
 
-      <View style={{ backgroundColor: palette.card, borderRadius: 18, borderWidth: 1, borderColor: palette.border, padding: 16 }}>
-        <Text style={{ color: palette.text, fontWeight: "600" }}>Today's Goal</Text>
+      <View
+        style={{
+          backgroundColor: palette.card,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: palette.border,
+          padding: 16,
+          marginBottom: 20,
+        }}
+      >
+        <Text
+          style={{
+            color: palette.text,
+            fontWeight: "600",
+            marginBottom: 12,
+          }}
+        >
+          🎯 Set Daily Target
+        </Text>
+
+        <FlatList
+          data={numbers}
+          keyExtractor={(item) => item.toString()}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          renderItem={({ item }) => {
+            const active = item === target;
+            return (
+              <TouchableOpacity
+                onPress={() => updateTarget(item)}
+                style={{
+                  paddingVertical: 12,
+                  paddingHorizontal: 18,
+                  borderRadius: 30,
+                  marginRight: 12,
+                  backgroundColor: active
+                    ? palette.accent
+                    : palette.background,
+                  borderWidth: 1,
+                  borderColor: palette.border,
+                }}
+              >
+                <Text
+                  style={{
+                    color: active ? "white" : palette.text,
+                    fontWeight: active ? "700" : "500",
+                    fontSize: active ? 18 : 16,
+                  }}
+                >
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      </View>
+
+      <View
+        style={{
+          backgroundColor: palette.card,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: palette.border,
+          padding: 16,
+        }}
+      >
+        <Text style={{ color: palette.text, fontWeight: "600" }}>
+          Today's Progress
+        </Text>
+
         <Text style={{ color: palette.subText, marginTop: 4 }}>
-          {progress.done}/{progress.target} verses completed ({percent}%)
+          {todayCount}/{target} verses read ({percent}%)
         </Text>
 
-        <View style={{ height: 10, borderRadius: 999, backgroundColor: "#E8D5C4", marginTop: 12, overflow: "hidden" }}>
-          <View style={{ width: `${percent}%`, height: 10, backgroundColor: palette.success }} />
+        <View
+          style={{
+            height: 10,
+            borderRadius: 999,
+            backgroundColor: "#E8D5C4",
+            marginTop: 12,
+            overflow: "hidden",
+          }}
+        >
+          <View
+            style={{
+              width: `${percent}%`,
+              height: 10,
+              backgroundColor:
+                todayCount >= target
+                  ? palette.success
+                  : palette.accent,
+            }}
+          />
         </View>
 
-        <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-          <TouchableOpacity
-            onPress={() => updateProgress({ ...progress, done: Math.max(0, progress.done - 1) })}
-            style={{ flex: 1, borderColor: palette.accent, borderWidth: 1, borderRadius: 12, padding: 12 }}
+        {todayCount >= target && (
+          <Text
+            style={{
+              color: palette.success,
+              marginTop: 14,
+              fontWeight: "600",
+            }}
           >
-            <Text style={{ textAlign: "center", color: palette.accent, fontWeight: "600" }}>Undo</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => updateProgress({ ...progress, done: Math.min(progress.target, progress.done + 1) })}
-            style={{ flex: 1, backgroundColor: palette.accent, borderRadius: 12, padding: 12 }}
-          >
-            <Text style={{ textAlign: "center", color: "white", fontWeight: "700" }}>Mark Verse Done</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={{ color: palette.subText, marginTop: 16 }}>
-          Tip: Open any chapter and read mindfully. Return here and tap "Mark Verse Done" after each completed verse.
-        </Text>
+            🎉 Daily mission complete! Well done.
+          </Text>
+        )}
       </View>
     </ScrollView>
   );

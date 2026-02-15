@@ -19,39 +19,40 @@ export default function ChaptersScreen() {
   const cardBg = isDarkMode ? "bg-[#2B2930]" : "bg-[#FFFDF9]";
   const textMeaningColor = isDarkMode ? "text-[#CAC4D0]" : "text-[#625B71]";
 
-  const fetchChapters = async () => {
-    try {
-      const chaptersData = await getChapters();
+const fetchChapters = async () => {
+  try {
+    const chaptersData = await getChapters();
 
-      const updatedChapters = await Promise.all(
-        chaptersData.map(async (chapter: any) => {
-          let readCount = 0;
+    const updatedChapters = await Promise.all(
+      chaptersData.map(async (chapter: any) => {
 
-          for (let i = 1; i <= chapter.verses_count; i++) {
-            const key = `read_verse_${chapter.chapter_number}_${i}`;
-            const isRead = await AsyncStorage.getItem(key);
-            if (isRead === "true") readCount++;
-          }
+        // ✅ NEW STORAGE SYSTEM
+        const key = `read_chapter_${chapter.chapter_number}`;
+        const stored = await AsyncStorage.getItem(key);
+        const readVerses = stored ? JSON.parse(stored) : [];
 
-          const progress = chapter.verses_count
-            ? readCount / chapter.verses_count
-            : 0;
+        const readCount = readVerses.length;
 
-          return {
-            ...chapter,
-            readCount,
-            progress,
-          };
-        }),
-      );
+        const progress = chapter.verses_count
+          ? readCount / chapter.verses_count
+          : 0;
 
-      setChapters(updatedChapters);
-    } catch (error) {
-      console.error("Error fetching chapters:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        return {
+          ...chapter,
+          readCount,
+          progress,
+        };
+      })
+    );
+
+    setChapters(updatedChapters);
+  } catch (error) {
+    console.error("Error fetching chapters:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useFocusEffect(
     useCallback(() => {

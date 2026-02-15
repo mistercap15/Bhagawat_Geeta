@@ -71,7 +71,7 @@ export default function VerseDetails() {
     [isDarkMode],
   );
 
-  // ─── Load Verse ────────────────────────────────────────────────
+  // ─── EXACTLY LIKE OLD CODE - Simple per-verse storage ─────────
   const loadVerse = async (verseId: number) => {
     const data = await getSlok(chapterId, verseId);
     setVerse(data);
@@ -110,8 +110,31 @@ export default function VerseDetails() {
       setLoading(false);
     })();
   }, [initialVerseId]);
+  useEffect(() => {
+    if (!currentVerseId) return;
 
-  // ─── Change Verse ──────────────────────────────────────────────
+    const persistLastRead = async () => {
+      try {
+        await AsyncStorage.setItem(
+          "last_read",
+          JSON.stringify({
+            chapter: chapterId,
+            verse: currentVerseId,
+            timestamp: Date.now(),
+          }),
+        );
+      } catch (e) {
+        console.log("Error saving last read:", e);
+      }
+    };
+
+    // Run AFTER render settles
+    const timeout = setTimeout(persistLastRead, 0);
+
+    return () => clearTimeout(timeout);
+  }, [currentVerseId]);
+
+  // ─── EXACTLY LIKE OLD CODE ─────────────────────────────────────
   const changeVerse = async (direction: "next" | "prev") => {
     const nextId =
       direction === "next" ? currentVerseId + 1 : currentVerseId - 1;
@@ -122,8 +145,11 @@ export default function VerseDetails() {
     }
 
     setCurrentVerseId(nextId);
+
+    // Only load UI data
     await loadVerse(nextId);
     await loadAdjacentVerses(nextId);
+
     translateX.value = 0;
   };
 
@@ -239,7 +265,7 @@ export default function VerseDetails() {
     return { opacity: overlayOpacity, width: overlayWidth, shadowOpacity };
   });
 
-  // ─── Toggles ───────────────────────────────────────────────────
+  // ─── Toggles - EXACTLY LIKE OLD CODE ──────────────────────────
   const toggleFavorite = async () => {
     const v = !isFavorite;
     setIsFavorite(v);
@@ -252,12 +278,44 @@ export default function VerseDetails() {
   };
 
   const toggleRead = async () => {
-    const v = !isRead;
-    setIsRead(v);
-    await AsyncStorage.setItem(
-      `read_verse_${chapterId}_${currentVerseId}`,
-      v.toString(),
-    );
+    try {
+      const chapterKey = `read_chapter_${chapterId}`;
+      const dailyKey = "daily_read_log";
+      const today = new Date().toISOString().split("T")[0];
+      const verseKey = `${chapterId}_${currentVerseId}`;
+
+      const existing = await AsyncStorage.getItem(chapterKey);
+      let readVerses: number[] = existing ? JSON.parse(existing) : [];
+
+      const rawDaily = await AsyncStorage.getItem(dailyKey);
+      let dailyLog = rawDaily ? JSON.parse(rawDaily) : {};
+
+      if (!dailyLog[today]) {
+        dailyLog[today] = [];
+      }
+
+      let updatedReadState;
+
+      if (readVerses.includes(currentVerseId)) {
+        readVerses = readVerses.filter((v) => v !== currentVerseId);
+        dailyLog[today] = dailyLog[today].filter((v: string) => v !== verseKey);
+        updatedReadState = false;
+      } else {
+        readVerses.push(currentVerseId);
+        if (!dailyLog[today].includes(verseKey)) {
+          dailyLog[today].push(verseKey);
+        }
+        updatedReadState = true;
+      }
+
+      setIsRead(updatedReadState);
+
+      // Save in background (no animation happening here)
+      await AsyncStorage.setItem(chapterKey, JSON.stringify(readVerses));
+      await AsyncStorage.setItem(dailyKey, JSON.stringify(dailyLog));
+    } catch (error) {
+      console.log("Error updating read state:", error);
+    }
   };
 
   // ─── Render Verse Card ─────────────────────────────────────────
@@ -285,51 +343,6 @@ export default function VerseDetails() {
           />
         )}
 
-        {/* Favorite Button */}
-        {isCurrent && (
-          <TouchableOpacity
-            onPress={toggleFavorite}
-            style={[
-              styles.cornerButton,
-              styles.leftCornerButton,
-              {
-                backgroundColor: palette.buttonBg,
-                borderColor: palette.pageBorder,
-              },
-            ]}
-            activeOpacity={0.7}
-          >
-            <Heart
-              size={20}
-              color={isFavorite ? "#C41E3A" : palette.muted}
-              fill={isFavorite ? "#C41E3A" : "transparent"}
-              strokeWidth={2.5}
-            />
-          </TouchableOpacity>
-        )}
-
-        {/* Read Button */}
-        {isCurrent && (
-          <TouchableOpacity
-            onPress={toggleRead}
-            style={[
-              styles.cornerButton,
-              styles.rightCornerButton,
-              {
-                backgroundColor: palette.buttonBg,
-                borderColor: palette.pageBorder,
-              },
-            ]}
-            activeOpacity={0.7}
-          >
-            {isRead ? (
-              <CheckSquare color="#5BB974" size={20} strokeWidth={2.5} />
-            ) : (
-              <Square color={palette.muted} size={20} strokeWidth={2.5} />
-            )}
-          </TouchableOpacity>
-        )}
-
         {/* Page Corner Fold */}
         <View
           style={[styles.cornerFold, { borderRightColor: palette.pageBorder }]}
@@ -340,9 +353,9 @@ export default function VerseDetails() {
           style={styles.cardContent}
           showsVerticalScrollIndicator={false}
           bounces={false}
-        >
           contentInsetAdjustmentBehavior="never"
           automaticallyAdjustContentInsets={false}
+        >
           <View style={styles.verseSection}>
             <View style={styles.sectionHeader}>
               <View
@@ -422,19 +435,80 @@ export default function VerseDetails() {
     >
       <View style={styles.contentWrapper}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.chapterText, { color: palette.accent }]}>
+        <View className="mb-6">
+          {/* Chapter Title */}
+          <Text
+            className="text-[18px] font-semibold tracking-wide text-center"
+            style={{ color: palette.accent }}
+          >
             अध्याय {verse.chapter}
           </Text>
-          <Text style={[styles.verseCountText, { color: palette.muted }]}>
+
+          {/* Verse Counter */}
+          <Text
+            className="text-[14px] mt-1 text-center"
+            style={{ color: palette.muted }}
+          >
             श्लोक {currentVerseId} / {versesCount}
           </Text>
-          <View style={styles.navigationHint}>
-            <ChevronLeft color={palette.muted} size={16} />
-            <Text style={[styles.hintText, { color: palette.muted }]}>
-              Swipe to turn pages
-            </Text>
-            <ChevronRight color={palette.muted} size={16} />
+
+          {/* Action Buttons Row */}
+          <View className="flex-row justify-center gap-4 mt-4">
+            {/* Bookmark Button */}
+            <TouchableOpacity
+              onPress={toggleFavorite}
+              activeOpacity={0.8}
+              className={`flex-row items-center px-4 py-2 rounded-full border ${
+                isFavorite
+                  ? "bg-[#C41E3A]/10 border-[#C41E3A]"
+                  : isDarkMode
+                    ? "border-[#4A4458]"
+                    : "border-[#E8D5C4]"
+              }`}
+            >
+              <Heart
+                size={18}
+                strokeWidth={2.2}
+                color={isFavorite ? "#C41E3A" : palette.muted}
+                fill={isFavorite ? "#C41E3A" : "transparent"}
+              />
+              <Text
+                className="ml-2 text-[13px] font-semibold"
+                style={{
+                  color: isFavorite ? "#C41E3A" : palette.muted,
+                }}
+              >
+                {isFavorite ? "Bookmarked" : "Bookmark"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Mark as Read Button */}
+            <TouchableOpacity
+              onPress={toggleRead}
+              activeOpacity={0.8}
+              className={`flex-row items-center px-4 py-2 rounded-full border ${
+                isRead
+                  ? "bg-[#5BB974]/10 border-[#5BB974]"
+                  : isDarkMode
+                    ? "border-[#4A4458]"
+                    : "border-[#E8D5C4]"
+              }`}
+            >
+              {isRead ? (
+                <CheckSquare size={18} strokeWidth={2.2} color="#5BB974" />
+              ) : (
+                <Square size={18} strokeWidth={2.2} color={palette.muted} />
+              )}
+
+              <Text
+                className="ml-2 text-[13px] font-semibold"
+                style={{
+                  color: isRead ? "#5BB974" : palette.muted,
+                }}
+              >
+                {isRead ? "Completed" : "Mark as Read"}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -548,28 +622,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 90,
   },
-  header: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  chapterText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  verseCountText: {
-    fontSize: 14,
-    marginTop: 4,
-    fontWeight: "500",
-  },
-  navigationHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 12,
-    gap: 8,
-  },
-  hintText: {
-    fontSize: 12,
-  },
   pagesContainer: {
     flex: 1,
   },
@@ -614,29 +666,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
-  },
-  cornerButton: {
-    position: "absolute",
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 10,
-  },
-  leftCornerButton: {
-    top: -12,
-    left: -12,
-  },
-  rightCornerButton: {
-    top: -12,
-    right: -12,
   },
   cornerFold: {
     position: "absolute",

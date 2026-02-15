@@ -33,7 +33,18 @@ export default function HomeLayout() {
         name="chapters/[id]/[verse_id]"
         options={{ title: "Shloka Details", headerShown: false }}
       />
-      <Stack.Screen name="favorite/index" options={{ title: "Favorites" }} />
+      <Stack.Screen
+        name="favorite/index"
+        options={{ title: "Favorites", headerShown: false }}
+      />
+      <Stack.Screen
+        name="continue-reading"
+        options={{ title: "Continue Reading", headerShown: false }}
+      />
+      <Stack.Screen
+        name="daily-practice"
+        options={{ title: "Daily Practice", headerShown: false }}
+      />
     </Stack>
   );
 }

@@ -30,14 +30,12 @@ export default function ShlokasScreen() {
         throw new Error("Chapter not found in local data");
       }
       const versesCount = chapterData.verses_count;
-      const readSet = new Set<number>();
-      for (let i = 1; i <= versesCount; i++) {
-        const key = `read_verse_${chapterData.chapter_number}_${i}`;
-        const isRead = await AsyncStorage.getItem(key);
-        if (isRead === "true") {
-          readSet.add(i);
-        }
-      }
+     const stored = await AsyncStorage.getItem(
+  `read_chapter_${chapterData.chapter_number}`
+);
+const readArray = stored ? JSON.parse(stored) : [];
+const readSet = new Set<number>(readArray);
+
 
       setReadVerses(readSet);
       setChapter(chapterData);

@@ -217,67 +217,166 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <View
-            className={`mx-5 rounded-[28px] ${cardBg} p-4 border border-[#E8D5C4]`}
-          >
-            <Text className={`text-xl font-semibold mb-4 ${textColor}`}>
-              🙏 Explore Your Spiritual Journey
+          <View className="mx-5 mt-2 mb-8">
+            <Text className={`text-xl font-semibold mb-6 ${textColor}`}>
+              🙏 Begin Your Journey
             </Text>
 
-            {[
-              {
-                icon: <BookOpen size={24} color="#8A4D24" />,
-                title: "Read Chapters",
-                desc: "Explore all 18 chapters with deep meanings",
-                onPress: () => router.push("/(tabs)/home/chapters"),
-                color: "bg-[#FFDDB8]",
-              },
-              {
-                icon: <Star size={24} color="#8A4D24" />,
-                title: "Favorites",
-                desc: "Keep your most loved verses in one place",
-                onPress: () => router.push("/(tabs)/home/favorite"),
-                color: "bg-[#FFE4C4]",
-              },
-              {
-                icon: <Headphones size={24} color="#8A4D24" />,
-                title: "Audio Recitations",
-                desc: "Sanskrit chants and guided listening",
-                onPress: () => router.push("/(tabs)/home/audio-recitation"),
-                color: "bg-[#FFEAD7]",
-              },
-              {
-                icon: <Sun size={24} color="#8A4D24" />,
-                title: "Daily Practice",
-                desc: "Build a mindful reading routine",
-                onPress: () => router.push("/(tabs)/home/daily-practice"),
-                color: "bg-[#FFEAD7]",
-              },
-            ].map((item: any, index) => (
-              <Animated.View
-                key={item.title}
-                entering={FadeInDown.duration(1100 + index * 200)}
-                className="mb-3"
+            {/* ROW 1 */}
+            <View className="flex-row justify-between mb-5">
+              {/* Read Chapters */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => router.push("/(tabs)/home/chapters")}
+                className="w-[48%] rounded-[30px] p-5"
+                style={{
+                  backgroundColor: isDarkMode ? "#2B2930" : "#FFFDF9",
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? "#4A4458" : "#E8D5C4",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: isDarkMode ? 0.4 : 0.12,
+                  shadowRadius: 12,
+                  elevation: 6,
+                }}
               >
-                <TouchableOpacity
-                  onPress={item.onPress}
-                  className="rounded-3xl px-4 py-4 flex-row items-center border border-[#EEDBC8]"
+                <View
+                  style={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: 23,
+                    backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
                 >
-                  <View className={`${item.color} rounded-full p-3 mr-4`}>
-                    {item.icon}
-                  </View>
-                  <View className="flex-1">
-                    <Text className={`text-lg font-semibold ${textColor}`}>
-                      {item.title}
-                    </Text>
-                    <Text className={`text-sm mt-1 ${subTextColor}`}>
-                      {item.desc}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </Animated.View>
-            ))}
+                  <BookOpen size={26} color="#8A4D24" />
+                </View>
+
+                <Text className={`text-lg font-semibold mt-5 ${textColor}`}>
+                  Read Chapters
+                </Text>
+                <Text className={`text-sm mt-1 ${subTextColor}`}>
+                  Explore all 18 chapters
+                </Text>
+              </TouchableOpacity>
+
+              {/* Favorites */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => router.push("/(tabs)/home/favorite")}
+                className="w-[48%] rounded-[30px] p-5"
+                style={{
+                  backgroundColor: isDarkMode ? "#2B2930" : "#FFFDF9",
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? "#4A4458" : "#E8D5C4",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: isDarkMode ? 0.4 : 0.12,
+                  shadowRadius: 12,
+                  elevation: 6,
+                }}
+              >
+                <View
+                  style={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: 23,
+                    backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Star size={26} color="#8A4D24" />
+                </View>
+
+                <Text className={`text-lg font-semibold mt-5 ${textColor}`}>
+                  Favorites
+                </Text>
+                <Text className={`text-sm mt-1 ${subTextColor}`}>
+                  Your saved verses
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* ROW 2 */}
+            <View className="flex-row justify-between">
+              {/* Continue Reading */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => router.push("/(tabs)/home/continue-reading")}
+                className="w-[48%] rounded-[30px] p-5"
+                style={{
+                  backgroundColor: isDarkMode ? "#2B2930" : "#FFFDF9",
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? "#4A4458" : "#E8D5C4",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: isDarkMode ? 0.4 : 0.12,
+                  shadowRadius: 12,
+                  elevation: 6,
+                }}
+              >
+                <View
+                  style={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: 23,
+                    backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Sparkles size={26} color="#8A4D24" />
+                </View>
+
+                <Text className={`text-lg font-semibold mt-5 ${textColor}`}>
+                  Continue Reading
+                </Text>
+                <Text className={`text-sm mt-1 ${subTextColor}`}>
+                  Resume where you left
+                </Text>
+              </TouchableOpacity>
+
+              {/* Daily Practice */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => router.push("/(tabs)/home/daily-practice")}
+                className="w-[48%] rounded-[30px] p-5"
+                style={{
+                  backgroundColor: isDarkMode ? "#2B2930" : "#FFFDF9",
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? "#4A4458" : "#E8D5C4",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: isDarkMode ? 0.4 : 0.12,
+                  shadowRadius: 12,
+                  elevation: 6,
+                }}
+              >
+                <View
+                  style={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: 23,
+                    backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Sun size={26} color="#8A4D24" />
+                </View>
+
+                <Text className={`text-lg font-semibold mt-5 ${textColor}`}>
+                  Daily Practice
+                </Text>
+                <Text className={`text-sm mt-1 ${subTextColor}`}>
+                  Build spiritual habit
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
+
           <Animated.View
             entering={FadeInDown.duration(2000)}
             className="items-center mt-8"
