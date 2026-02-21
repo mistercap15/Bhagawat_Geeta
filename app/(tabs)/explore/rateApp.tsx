@@ -1,36 +1,117 @@
-import React, { useEffect } from "react";
-import { View, Text, TouchableOpacity, Linking } from "react-native";
+import React from "react";
+import { View, Text, TouchableOpacity, Linking, ScrollView, StyleSheet } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { LinearGradient } from "expo-linear-gradient";
+import { Star, CheckCircle } from "lucide-react-native";
+
+const FEATURES = [
+  "Free & ad-free forever",
+  "Daily reading reminders at 7:30 AM",
+  "Offline access to all 700 verses",
+  "Favorites & reading progress tracking",
+  "Dark mode support",
+];
 
 const RateApp = () => {
   const { isDarkMode } = useTheme();
-  const textColor = isDarkMode ? "text-[#E8DEF8]" : "text-[#3E2723]";
-  const subTextColor = isDarkMode ? "text-[#CAC4D0]" : "text-[#625B71]";
+
+  const c = {
+    text: isDarkMode ? "#E8DEF8" : "#3E2723",
+    sub: isDarkMode ? "#CAC4D0" : "#625B71",
+    card: isDarkMode ? "#2B2930" : "#FFFDF9",
+    border: isDarkMode ? "#4A4458" : "#E8D5C4",
+  };
 
   return (
     <LinearGradient
       colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
-      <View className="flex-1 justify-center items-center px-6">
-        <Text className={`text-xl font-semibold mb-2 ${textColor}`}>
-          Enjoying the app?
-        </Text>
-        <Text className={`text-sm mb-4 text-center ${subTextColor}`}>
-          Your rating helps more seekers discover the Gita.
-        </Text>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero */}
+        <View style={styles.hero}>
+          <View style={styles.starsRow}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Star key={i} size={34} color="#F59E0B" fill="#F59E0B" />
+            ))}
+          </View>
+          <Text style={[styles.heroTitle, { color: c.text }]}>Enjoying the App?</Text>
+          <Text style={[styles.heroSub, { color: c.sub }]}>
+            Your rating helps more seekers discover the wisdom of the Gita 🙏
+          </Text>
+        </View>
+
+        {/* Features card */}
+        <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
+          <Text style={[styles.cardTitle, { color: c.text }]}>What you get</Text>
+          {FEATURES.map((feature) => (
+            <View key={feature} style={styles.featureRow}>
+              <CheckCircle size={16} color="#22C55E" />
+              <Text style={[styles.featureText, { color: c.sub }]}>{feature}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* CTA */}
         <TouchableOpacity
           onPress={() =>
-            Linking.openURL("https://play.google.com/store/apps/details?id=your.app.id")
+            Linking.openURL(
+              "https://play.google.com/store/apps/details?id=com.khilanpatel15.Bhagawat_Geeta"
+            )
           }
-          className="bg-[#8A4D24] px-5 py-3 rounded-2xl"
+          activeOpacity={0.8}
+          style={styles.ctaWrap}
         >
-          <Text className="text-white font-semibold">Rate on Play Store</Text>
+          <LinearGradient
+            colors={["#F59E0B", "#D97706"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.ctaBtn}
+          >
+            <Star size={18} color="#fff" fill="#fff" />
+            <Text style={styles.ctaBtnText}>Rate on Play Store</Text>
+          </LinearGradient>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 };
 
 export default RateApp;
+
+const styles = StyleSheet.create({
+  scroll: { padding: 24, paddingBottom: 60 },
+
+  hero: { alignItems: "center", marginBottom: 28, marginTop: 10 },
+  starsRow: { flexDirection: "row", gap: 6, marginBottom: 18 },
+  heroTitle: { fontSize: 24, fontWeight: "800", marginBottom: 8, textAlign: "center" },
+  heroSub: { fontSize: 14, textAlign: "center", lineHeight: 22, maxWidth: 290 },
+
+  card: {
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  cardTitle: { fontSize: 15, fontWeight: "700", marginBottom: 14 },
+  featureRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
+  featureText: { fontSize: 14 },
+
+  ctaWrap: { borderRadius: 18, overflow: "hidden" },
+  ctaBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 16,
+  },
+  ctaBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+});

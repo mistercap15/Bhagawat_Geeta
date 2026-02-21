@@ -1,4 +1,4 @@
-import { ScrollView, View, Text, TouchableOpacity } from "react-native";
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useCallback, useState } from "react";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -6,130 +6,241 @@ import { getChapter } from "@/utils/gitaData";
 import { useTheme } from "@/context/ThemeContext";
 import MaterialLoader from "@/components/MaterialLoader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { CheckCircle } from "lucide-react-native";
+import { CheckCircle, ChevronRight } from "lucide-react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 export default function ShlokasScreen() {
   const { id } = useLocalSearchParams();
   const [chapter, setChapter] = useState<any>(null);
   const [verses, setVerses] = useState<any[]>([]);
+  const [readVerses, setReadVerses] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const router = useRouter();
   const { isDarkMode } = useTheme();
 
-  const textColor = isDarkMode ? "text-[#E8DEF8]" : "text-[#3E2723]";
-  const sectionBg = isDarkMode ? "bg-[#2B2930]" : "bg-[#FFFDF9]";
-  const secondaryText = isDarkMode ? "text-[#CAC4D0]" : "text-[#625B71]";
-  const borderColor = isDarkMode ? "#4A4458" : "#E8D5C4";
+  const c = {
+    text: isDarkMode ? "#E8DEF8" : "#3E2723",
+    sub: isDarkMode ? "#CAC4D0" : "#625B71",
+    card: isDarkMode ? "#2B2930" : "#FFFDF9",
+    border: isDarkMode ? "#4A4458" : "#E8D5C4",
+    track: isDarkMode ? "#3A3444" : "#E8D5C4",
+  };
 
   const fetchChapterData = async () => {
     setError(false);
     try {
       const chapterData = await getChapter(id as string);
-      if (!chapterData) {
-        throw new Error("Chapter not found in local data");
-      }
-      const versesCount = chapterData.verses_count;
-     const stored = await AsyncStorage.getItem(
-  `read_chapter_${chapterData.chapter_number}`
-);
-const readArray = stored ? JSON.parse(stored) : [];
-const readSet = new Set<number>(readArray);
+      if (!chapterData) throw new Error("Chapter not found");
 
-
-      setReadVerses(readSet);
+      const stored = await AsyncStorage.getItem(
+        `read_chapter_${chapterData.chapter_number}`
+      );
+      const readArray = stored ? JSON.parse(stored) : [];
+      setReadVerses(new Set<number>(readArray));
       setChapter(chapterData);
       setVerses(
-        Array.from({ length: versesCount }, (_, index) => ({
-          verse_number: index + 1,
-        })),
+        Array.from({ length: chapterData.verses_count }, (_, i) => ({
+          verse_number: i + 1,
+        }))
       );
-    } catch (error) {
-      console.error("Error fetching chapter or verses:", error);
+    } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
   };
 
-  const [readVerses, setReadVerses] = useState<Set<number>>(new Set());
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchChapterData();
-    }, [id]),
-  );
+  useFocusEffect(useCallback(() => { fetchChapterData(); }, [id]));
 
   if (loading || !chapter) {
     return (
-      <View
-        className={`flex-1 justify-center items-center ${isDarkMode ? "bg-[#1C1B1F]" : "bg-[#FFF8F1]"}`}
+      <LinearGradient
+        colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+        style={styles.center}
       >
         <MaterialLoader size="large" />
-        <Text className={`mt-2 ${textColor}`}>
-          {error ? "Missing local chapter data." : "Loading chapter..."}
+        <Text style={[styles.loadingText, { color: c.sub }]}>
+          {error ? "Could not load chapter." : "Loading…"}
         </Text>
-      </View>
+      </LinearGradient>
     );
   }
+
+  const readCount = readVerses.size;
+  const progress = Math.round((readCount / chapter.verses_count) * 100);
 
   return (
     <LinearGradient
       colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
       <ScrollView
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustContentInsets={false}
-        className="px-6 pt-6"
-        contentContainerStyle={{ paddingBottom: 90 }}
+        contentContainerStyle={styles.scroll}
         scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
       >
-        <View
-          className={`mb-8 p-6 rounded-3xl ${sectionBg}`}
-          style={{
-            borderWidth: 1,
-            borderColor,
-          }}
+        {/* Chapter header card */}
+        <LinearGradient
+          colors={isDarkMode ? ["#2B2930", "#352F3F"] : ["#FFF1E6", "#FFEAD7"]}
+          style={[styles.headerCard, { borderColor: c.border }]}
         >
-          <Text className={`text-3xl font-bold mb-2 ${textColor}`}>
-            📖 अध्याय {chapter.chapter_number}: {chapter.transliteration}
+          <Text style={styles.chapterLabel}>CHAPTER {chapter.chapter_number}</Text>
+          <Text style={[styles.chapterTitle, { color: c.text }]}>
+            {chapter.transliteration}
           </Text>
-          <Text className={`italic mb-4 text-[15px] ${secondaryText}`}>
-            “{chapter.meaning.en}”
+          <Text style={[styles.chapterMeaning, { color: c.sub }]}>
+            "{chapter.meaning.en}"
           </Text>
-          <Text className={`leading-relaxed text-[16px] ${secondaryText}`}>
+          <Text style={[styles.chapterSummary, { color: c.sub }]} numberOfLines={3}>
             {chapter.summary.en}
           </Text>
-        </View>
 
-        {verses.map((verse) => (
-          <TouchableOpacity
-            key={verse.verse_number}
-            onPress={() =>
-              router.push(
-                `/home/chapters/${id}/${verse.verse_number}?verses_count=${chapter.verses_count}`,
-              )
-            }
-            className={`rounded-3xl p-5 mb-4 ${sectionBg}`}
-            style={{ borderWidth: 1, borderColor }}
-          >
-            <View className="flex-row justify-between items-center">
-              <View className="border-l-4 border-[#D97706] pl-4 flex-1">
-                <Text className={`text-lg font-semibold mb-1 ${textColor}`}>
-                  Verse {verse.verse_number}
-                </Text>
-                <Text className={`text-base ${secondaryText}`}>
-                  श्लोक {verse.verse_number}
-                </Text>
-              </View>
-              {readVerses.has(verse.verse_number) && (
-                <CheckCircle size={22} color="#5BB974" className="ml-2" />
-              )}
+          {/* Progress bar */}
+          <View style={styles.progressRow}>
+            <View style={[styles.trackBg, { flex: 1, backgroundColor: c.track }]}>
+              <LinearGradient
+                colors={progress === 100 ? ["#22C55E", "#16A34A"] : ["#D97706", "#8A4D24"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.trackFill, { width: `${progress}%` }]}
+              />
             </View>
-          </TouchableOpacity>
-        ))}
+            <Text style={[styles.progressLabel, { color: c.sub }]}>
+              {readCount}/{chapter.verses_count}
+            </Text>
+          </View>
+        </LinearGradient>
+
+        {/* Verse list */}
+        <Text style={[styles.sectionLabel, { color: c.text }]}>
+          {chapter.verses_count} Verses
+        </Text>
+
+        {verses.map((verse, index) => {
+          const isRead = readVerses.has(verse.verse_number);
+          return (
+            <Animated.View
+              key={verse.verse_number}
+              entering={FadeInDown.duration(260).delay(index * 16)}
+            >
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() =>
+                  router.push(
+                    `/home/chapters/${id}/${verse.verse_number}?verses_count=${chapter.verses_count}`
+                  )
+                }
+                style={[
+                  styles.verseCard,
+                  {
+                    backgroundColor: c.card,
+                    borderColor: isRead ? "#22C55E55" : c.border,
+                    shadowOpacity: isDarkMode ? 0.2 : 0.06,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.verseBadge,
+                    {
+                      backgroundColor: isRead
+                        ? "#22C55E20"
+                        : isDarkMode
+                        ? "#3A3444"
+                        : "#FFF1E6",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.verseNum,
+                      { color: isRead ? "#22C55E" : "#8A4D24" },
+                    ]}
+                  >
+                    {verse.verse_number}
+                  </Text>
+                </View>
+
+                <View style={styles.verseBody}>
+                  <Text style={[styles.verseTitle, { color: c.text }]}>
+                    Verse {verse.verse_number}
+                  </Text>
+                  <Text style={[styles.verseSub, { color: c.sub }]}>
+                    {isRead ? "Completed" : "Tap to read"}
+                  </Text>
+                </View>
+
+                {isRead ? (
+                  <CheckCircle size={20} color="#22C55E" />
+                ) : (
+                  <ChevronRight size={18} color={c.sub} />
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+          );
+        })}
       </ScrollView>
     </LinearGradient>
   );
 }
+
+const styles = StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingText: { marginTop: 12, fontSize: 14 },
+  scroll: { paddingBottom: 110 },
+
+  headerCard: { margin: 20, marginBottom: 0, borderRadius: 22, padding: 20, borderWidth: 1 },
+  chapterLabel: {
+    color: "#8A4D24",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    marginBottom: 6,
+  },
+  chapterTitle: { fontSize: 22, fontWeight: "800", marginBottom: 4 },
+  chapterMeaning: { fontSize: 13, fontStyle: "italic", marginBottom: 10 },
+  chapterSummary: { fontSize: 13, lineHeight: 20, marginBottom: 14 },
+
+  progressRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  trackBg: { height: 6, borderRadius: 99, overflow: "hidden" },
+  trackFill: { height: 6, borderRadius: 99 },
+  progressLabel: { fontSize: 12, fontWeight: "600" },
+
+  sectionLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    marginTop: 20,
+    marginBottom: 12,
+    marginHorizontal: 20,
+  },
+
+  verseCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 10,
+    marginHorizontal: 20,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  verseBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  verseNum: { fontSize: 14, fontWeight: "700" },
+  verseBody: { flex: 1 },
+  verseTitle: { fontSize: 14, fontWeight: "600" },
+  verseSub: { fontSize: 12, marginTop: 2 },
+});

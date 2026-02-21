@@ -1,13 +1,21 @@
-import { ScrollView, TouchableOpacity, View, Text } from "react-native";
-import { BookOpen } from "lucide-react-native";
+import { ScrollView, TouchableOpacity, View, Text, StyleSheet } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
-import { ProgressBar } from "react-native-paper";
 import { useCallback, useState } from "react";
 import { getChapters } from "@/utils/gitaData";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "@/context/ThemeContext";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialLoader from "@/components/MaterialLoader";
+import { ChevronRight } from "lucide-react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
+
+// Each chapter gets a distinct accent colour for its badge + progress bar
+const CHAPTER_COLORS = [
+  "#E8913A", "#D97706", "#22C55E", "#3B82F6", "#9B59B6",
+  "#E91E63", "#00BCD4", "#FF5722", "#8BC34A", "#673AB7",
+  "#F44336", "#4CAF50", "#2196F3", "#FF9800", "#795548",
+  "#607D8B", "#E91E63", "#009688",
+];
 
 export default function ChaptersScreen() {
   const router = useRouter();
@@ -15,122 +23,211 @@ export default function ChaptersScreen() {
   const [loading, setLoading] = useState(true);
   const { isDarkMode } = useTheme();
 
-  const textColor = isDarkMode ? "text-[#E8DEF8]" : "text-[#3E2723]";
-  const cardBg = isDarkMode ? "bg-[#2B2930]" : "bg-[#FFFDF9]";
-  const textMeaningColor = isDarkMode ? "text-[#CAC4D0]" : "text-[#625B71]";
+  const c = {
+    text: isDarkMode ? "#E8DEF8" : "#3E2723",
+    sub: isDarkMode ? "#CAC4D0" : "#625B71",
+    card: isDarkMode ? "#2B2930" : "#FFFDF9",
+    border: isDarkMode ? "#4A4458" : "#E8D5C4",
+    track: isDarkMode ? "#3A3444" : "#F0E8E0",
+  };
 
-const fetchChapters = async () => {
-  try {
-    const chaptersData = await getChapters();
+  const fetchChapters = async () => {
+    try {
+      const chaptersData = await getChapters();
+      const updated = await Promise.all(
+        chaptersData.map(async (chapter: any) => {
+          const stored = await AsyncStorage.getItem(`read_chapter_${chapter.chapter_number}`);
+          const readVerses = stored ? JSON.parse(stored) : [];
+          const readCount = readVerses.length;
+          const progress = chapter.verses_count ? readCount / chapter.verses_count : 0;
+          return { ...chapter, readCount, progress };
+        })
+      );
+      setChapters(updated);
+    } catch (error) {
+      console.error("Error fetching chapters:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const updatedChapters = await Promise.all(
-      chaptersData.map(async (chapter: any) => {
-
-        // ✅ NEW STORAGE SYSTEM
-        const key = `read_chapter_${chapter.chapter_number}`;
-        const stored = await AsyncStorage.getItem(key);
-        const readVerses = stored ? JSON.parse(stored) : [];
-
-        const readCount = readVerses.length;
-
-        const progress = chapter.verses_count
-          ? readCount / chapter.verses_count
-          : 0;
-
-        return {
-          ...chapter,
-          readCount,
-          progress,
-        };
-      })
-    );
-
-    setChapters(updatedChapters);
-  } catch (error) {
-    console.error("Error fetching chapters:", error);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  useFocusEffect(
-    useCallback(() => {
-      fetchChapters();
-    }, []),
-  );
+  useFocusEffect(useCallback(() => { fetchChapters(); }, []));
 
   if (loading) {
     return (
-      <View
-        className={`flex-1 justify-center items-center ${isDarkMode ? "bg-[#1C1B1F]" : "bg-[#FFF8F1]"}`}
+      <LinearGradient
+        colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+        style={styles.center}
       >
         <MaterialLoader size="large" />
-        <Text className={`mt-2 ${textColor}`}>Loading chapters...</Text>
-      </View>
+        <Text style={[styles.loadingText, { color: c.sub }]}>Loading chapters…</Text>
+      </LinearGradient>
     );
   }
+
+  const totalRead = chapters.reduce((sum, ch) => sum + ch.readCount, 0);
 
   return (
     <LinearGradient
       colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
       <ScrollView
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustContentInsets={false}
-        className="p-2 px-6"
-        contentContainerStyle={{ paddingBottom: 90 }}
+        contentContainerStyle={styles.scroll}
         scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
       >
-        <Text className={`text-3xl font-bold mb-5 mt-3 ${textColor}`}>
-          📖 All Chapters
-        </Text>
+        {/* Page header */}
+        <View style={styles.pageHeader}>
+          <Text style={[styles.pageTitle, { color: c.text }]}>All Chapters</Text>
+          <Text style={[styles.pageSub, { color: c.sub }]}>
+            18 chapters · {totalRead} verses read
+          </Text>
+        </View>
 
-        {chapters.map((chapter) => (
-          <TouchableOpacity
-            key={chapter.chapter_number}
-            className={`${cardBg} rounded-3xl p-4 mb-4 border border-[#E8D5C4]`}
-            onPress={() =>
-              router.push(
-                `/(tabs)/home/chapters/${chapter.chapter_number}/shlokas`,
-              )
-            }
-          >
-            <View className="flex-row items-center">
-              <View className="bg-[#FFDDB8] p-3 rounded-full mr-4">
-                <BookOpen size={24} color="#8A4D24" />
-              </View>
-              <View className="flex-1">
-                <Text className={`text-lg font-semibold ${textColor}`}>
-                  Chapter {chapter.chapter_number}: {chapter.name}
-                </Text>
-                <Text className={`text-sm ${textMeaningColor}`}>
-                  {chapter.meaning.en}
-                </Text>
-                <Text className={`text-sm ${textMeaningColor}`}>
-                  {chapter.meaning.hi}
-                </Text>
-              </View>
-            </View>
+        {chapters.map((chapter, index) => {
+          const color = CHAPTER_COLORS[(chapter.chapter_number - 1) % CHAPTER_COLORS.length];
+          const pct = Math.round(chapter.progress * 100);
 
-            <View className="mt-4">
-              <ProgressBar
-                progress={chapter.progress}
-                color={isDarkMode ? "#D0BCFF" : "#8A4D24"}
-                style={{
-                  height: 10,
-                  borderRadius: 10,
-                  backgroundColor: isDarkMode ? "#4A4458" : "#F8E7DA",
-                }}
-              />
-              <Text className={`text-sm mt-1 text-right ${textMeaningColor}`}>
-                {Math.round(chapter.progress * 100)}% Read
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+          return (
+            <Animated.View
+              key={chapter.chapter_number}
+              entering={FadeInDown.duration(350).delay(index * 35)}
+            >
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() =>
+                  router.push(`/(tabs)/home/chapters/${chapter.chapter_number}/shlokas`)
+                }
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: c.card,
+                    borderColor: c.border,
+                    shadowOpacity: isDarkMode ? 0.3 : 0.07,
+                  },
+                ]}
+              >
+                {/* Chapter number circle */}
+                <View
+                  style={[
+                    styles.chapterBadge,
+                    { backgroundColor: color + "22", borderColor: color + "55" },
+                  ]}
+                >
+                  <Text style={[styles.chapterNum, { color }]}>
+                    {chapter.chapter_number}
+                  </Text>
+                </View>
+
+                {/* Text content */}
+                <View style={styles.cardBody}>
+                  <View style={styles.cardTopRow}>
+                    <Text
+                      style={[styles.transliteration, { color: c.text }]}
+                      numberOfLines={1}
+                    >
+                      {chapter.transliteration}
+                    </Text>
+                    <View style={styles.cardTopRight}>
+                      {pct > 0 && (
+                        <View
+                          style={[
+                            styles.pctBadge,
+                            {
+                              backgroundColor:
+                                pct === 100 ? "#22C55E20" : color + "20",
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.pctText,
+                              { color: pct === 100 ? "#22C55E" : color },
+                            ]}
+                          >
+                            {pct}%
+                          </Text>
+                        </View>
+                      )}
+                      <ChevronRight size={16} color={c.sub} />
+                    </View>
+                  </View>
+
+                  <Text style={[styles.chapterMeta, { color: c.sub }]} numberOfLines={1}>
+                    {chapter.meaning.en} · {chapter.verses_count} verses
+                  </Text>
+
+                  {/* Progress bar */}
+                  <View style={[styles.trackBg, { backgroundColor: c.track }]}>
+                    <LinearGradient
+                      colors={
+                        pct === 100 ? ["#22C55E", "#16A34A"] : [color, color + "88"]
+                      }
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={[styles.trackFill, { width: `${pct}%` }]}
+                    />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
+          );
+        })}
       </ScrollView>
     </LinearGradient>
   );
 }
+
+const styles = StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingText: { marginTop: 12, fontSize: 14 },
+  scroll: { padding: 20, paddingBottom: 110 },
+
+  pageHeader: { marginBottom: 20, marginTop: 4 },
+  pageTitle: { fontSize: 28, fontWeight: "800" },
+  pageSub: { fontSize: 13, marginTop: 3 },
+
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  chapterBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+    flexShrink: 0,
+  },
+  chapterNum: { fontSize: 18, fontWeight: "800" },
+
+  cardBody: { flex: 1 },
+  cardTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 3,
+  },
+  transliteration: { fontSize: 15, fontWeight: "700", flex: 1, marginRight: 8 },
+  cardTopRight: { flexDirection: "row", alignItems: "center", gap: 6 },
+  pctBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  pctText: { fontSize: 11, fontWeight: "700" },
+
+  chapterMeta: { fontSize: 12, marginBottom: 10 },
+
+  trackBg: { height: 5, borderRadius: 99, overflow: "hidden" },
+  trackFill: { height: 5, borderRadius: 99 },
+});

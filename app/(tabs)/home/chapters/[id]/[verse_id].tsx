@@ -22,10 +22,13 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withSpring,
+  withSequence,
   runOnJS,
   interpolate,
   Extrapolate,
 } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 import { PanGestureHandler } from "react-native-gesture-handler";
 import { getSlok } from "@/utils/gitaData";
 import { useTheme } from "@/context/ThemeContext";
@@ -52,6 +55,8 @@ export default function VerseDetails() {
   const [loading, setLoading] = useState(true);
 
   const translateX = useSharedValue(0);
+  const favScale = useSharedValue(1);
+  const readScale = useSharedValue(1);
 
   const palette = useMemo(
     () => ({
@@ -70,6 +75,14 @@ export default function VerseDetails() {
     }),
     [isDarkMode],
   );
+
+  const favAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: favScale.value }],
+  }));
+
+  const readAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: readScale.value }],
+  }));
 
   // ─── EXACTLY LIKE OLD CODE - Simple per-verse storage ─────────
   const loadVerse = async (verseId: number) => {
@@ -267,6 +280,11 @@ export default function VerseDetails() {
 
   // ─── Toggles - EXACTLY LIKE OLD CODE ──────────────────────────
   const toggleFavorite = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    favScale.value = withSequence(
+      withTiming(0.82, { duration: 100 }),
+      withSpring(1, { damping: 6, stiffness: 250 }),
+    );
     const v = !isFavorite;
     setIsFavorite(v);
     const key = `favorite_verse_${chapterId}_${currentVerseId}`;
@@ -278,6 +296,11 @@ export default function VerseDetails() {
   };
 
   const toggleRead = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    readScale.value = withSequence(
+      withTiming(0.82, { duration: 100 }),
+      withSpring(1, { damping: 6, stiffness: 250 }),
+    );
     try {
       const chapterKey = `read_chapter_${chapterId}`;
       const dailyKey = "daily_read_log";
@@ -313,6 +336,13 @@ export default function VerseDetails() {
       // Save in background (no animation happening here)
       await AsyncStorage.setItem(chapterKey, JSON.stringify(readVerses));
       await AsyncStorage.setItem(dailyKey, JSON.stringify(dailyLog));
+
+      const verseReadKey = `read_verse_${chapterId}_${currentVerseId}`;
+      if (updatedReadState) {
+        await AsyncStorage.setItem(verseReadKey, "true");
+      } else {
+        await AsyncStorage.removeItem(verseReadKey);
+      }
     } catch (error) {
       console.log("Error updating read state:", error);
     }
@@ -321,7 +351,7 @@ export default function VerseDetails() {
   // ─── Render Verse Card ─────────────────────────────────────────
   const renderVerseCard = (
     verseData: any,
-    verseId: number,
+    _verseId: number,
     isCurrent = false,
   ) => {
     if (!verseData) return null;
@@ -454,61 +484,65 @@ export default function VerseDetails() {
 
           {/* Action Buttons Row */}
           <View className="flex-row justify-center gap-4 mt-4">
-            {/* Bookmark Button */}
-            <TouchableOpacity
-              onPress={toggleFavorite}
-              activeOpacity={0.8}
-              className={`flex-row items-center px-4 py-2 rounded-full border ${
-                isFavorite
-                  ? "bg-[#C41E3A]/10 border-[#C41E3A]"
-                  : isDarkMode
-                    ? "border-[#4A4458]"
-                    : "border-[#E8D5C4]"
-              }`}
-            >
-              <Heart
-                size={18}
-                strokeWidth={2.2}
-                color={isFavorite ? "#C41E3A" : palette.muted}
-                fill={isFavorite ? "#C41E3A" : "transparent"}
-              />
-              <Text
-                className="ml-2 text-[13px] font-semibold"
-                style={{
-                  color: isFavorite ? "#C41E3A" : palette.muted,
-                }}
+            {/* Favourite Button */}
+            <Animated.View style={favAnimatedStyle}>
+              <TouchableOpacity
+                onPress={toggleFavorite}
+                activeOpacity={0.9}
+                className={`flex-row items-center px-4 py-2 rounded-full border ${
+                  isFavorite
+                    ? "bg-[#C41E3A]/10 border-[#C41E3A]"
+                    : isDarkMode
+                      ? "border-[#4A4458]"
+                      : "border-[#E8D5C4]"
+                }`}
               >
-                {isFavorite ? "Bookmarked" : "Bookmark"}
-              </Text>
-            </TouchableOpacity>
+                <Heart
+                  size={18}
+                  strokeWidth={2.2}
+                  color={isFavorite ? "#C41E3A" : palette.muted}
+                  fill={isFavorite ? "#C41E3A" : "transparent"}
+                />
+                <Text
+                  className="ml-2 text-[13px] font-semibold"
+                  style={{
+                    color: isFavorite ? "#C41E3A" : palette.muted,
+                  }}
+                >
+                  {isFavorite ? "Favourited" : "Favourite"}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
 
             {/* Mark as Read Button */}
-            <TouchableOpacity
-              onPress={toggleRead}
-              activeOpacity={0.8}
-              className={`flex-row items-center px-4 py-2 rounded-full border ${
-                isRead
-                  ? "bg-[#5BB974]/10 border-[#5BB974]"
-                  : isDarkMode
-                    ? "border-[#4A4458]"
-                    : "border-[#E8D5C4]"
-              }`}
-            >
-              {isRead ? (
-                <CheckSquare size={18} strokeWidth={2.2} color="#5BB974" />
-              ) : (
-                <Square size={18} strokeWidth={2.2} color={palette.muted} />
-              )}
-
-              <Text
-                className="ml-2 text-[13px] font-semibold"
-                style={{
-                  color: isRead ? "#5BB974" : palette.muted,
-                }}
+            <Animated.View style={readAnimatedStyle}>
+              <TouchableOpacity
+                onPress={toggleRead}
+                activeOpacity={0.9}
+                className={`flex-row items-center px-4 py-2 rounded-full border ${
+                  isRead
+                    ? "bg-[#5BB974]/10 border-[#5BB974]"
+                    : isDarkMode
+                      ? "border-[#4A4458]"
+                      : "border-[#E8D5C4]"
+                }`}
               >
-                {isRead ? "Completed" : "Mark as Read"}
-              </Text>
-            </TouchableOpacity>
+                {isRead ? (
+                  <CheckSquare size={18} strokeWidth={2.2} color="#5BB974" />
+                ) : (
+                  <Square size={18} strokeWidth={2.2} color={palette.muted} />
+                )}
+
+                <Text
+                  className="ml-2 text-[13px] font-semibold"
+                  style={{
+                    color: isRead ? "#5BB974" : palette.muted,
+                  }}
+                >
+                  {isRead ? "Completed" : "Mark as Read"}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
           </View>
         </View>
 

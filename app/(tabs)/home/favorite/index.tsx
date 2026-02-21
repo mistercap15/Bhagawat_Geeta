@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState, useCallback } from "react";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -6,8 +6,9 @@ import { useTheme } from "@/context/ThemeContext";
 import { getSlok } from "@/utils/gitaData";
 import MaterialLoader from "@/components/MaterialLoader";
 import { LinearGradient } from "expo-linear-gradient";
-import { Heart } from "lucide-react-native";
+import { Heart, ChevronRight } from "lucide-react-native";
 import chaptersData from "@/data/gita.json";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 export default function FavoritesScreen() {
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -15,43 +16,35 @@ export default function FavoritesScreen() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
 
-  const textColor = isDarkMode ? "text-[#E8DEF8]" : "text-[#3E2723]";
-  const secondaryText = isDarkMode ? "text-[#CAC4D0]" : "text-[#625B71]";
-  const sectionBg = isDarkMode ? "bg-[#2B2930]" : "bg-[#FFFDF9]";
-  const borderColor = isDarkMode ? "#4A4458" : "#E8D5C4";
+  const c = {
+    text: isDarkMode ? "#E8DEF8" : "#3E2723",
+    sub: isDarkMode ? "#CAC4D0" : "#625B71",
+    card: isDarkMode ? "#2B2930" : "#FFFDF9",
+    border: isDarkMode ? "#4A4458" : "#E8D5C4",
+  };
 
   const { chapters } = chaptersData as any;
 
   useFocusEffect(
     useCallback(() => {
-      const loadFavorites = async () => {
+      const load = async () => {
         setLoading(true);
         try {
           const keys = await AsyncStorage.getAllKeys();
-          const favKeys = keys.filter((k) =>
-            k.startsWith("favorite_verse_")
-          );
-
-          const favVerseInfos = favKeys.map((key) => {
+          const favKeys = keys.filter((k) => k.startsWith("favorite_verse_"));
+          const favInfos = favKeys.map((key) => {
             const [, , chapter, verse] = key.split("_");
             return [chapter, verse];
           });
-
           const results = await Promise.all(
-            favVerseInfos.map(async ([chapter, verse]) => {
+            favInfos.map(async ([chapter, verse]) => {
               const slok = await getSlok(chapter, verse);
               const chapterMeta = chapters.find(
-                (c: any) =>
-                  String(c.chapter_number) === String(chapter)
+                (ch: any) => String(ch.chapter_number) === String(chapter)
               );
-
-              return {
-                ...slok,
-                verses_count: chapterMeta?.verses_count ?? 0,
-              };
+              return { ...slok, verses_count: chapterMeta?.verses_count ?? 0 };
             })
           );
-
           setFavorites(results.filter(Boolean));
         } catch (err) {
           console.error(err);
@@ -59,112 +52,175 @@ export default function FavoritesScreen() {
           setLoading(false);
         }
       };
-
-      loadFavorites();
+      load();
     }, [])
   );
 
-  /* ⏳ LOADING */
   if (loading) {
     return (
       <LinearGradient
-        colors={
-          isDarkMode
-            ? ["#1C1B1F", "#2B2930"]
-            : ["#FFF8F1", "#FFEAD7"]
-        }
-        className="flex-1 justify-center items-center"
+        colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+        style={styles.center}
       >
         <MaterialLoader size="large" />
-        <Text className={`mt-3 ${textColor}`}>
-          Loading favorites...
-        </Text>
+        <Text style={[styles.loadingText, { color: c.sub }]}>Loading favorites…</Text>
       </LinearGradient>
     );
   }
 
-  /* 📭 EMPTY STATE */
   if (favorites.length === 0) {
     return (
       <LinearGradient
-        colors={
-          isDarkMode
-            ? ["#1C1B1F", "#2B2930"]
-            : ["#FFF8F1", "#FFEAD7"]
-        }
-        className="flex-1 justify-center items-center px-6"
+        colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+        style={styles.emptyContainer}
       >
-        <Heart
-          size={42}
-          color={isDarkMode ? "#D0BCFF" : "#8A4D24"}
-        />
-        <Text className={`text-xl font-semibold mt-4 ${textColor}`}>
-          No Favorites Yet
-        </Text>
-        <Text className={`text-center mt-2 ${secondaryText}`}>
-          Tap the heart icon while reading to save verses here 🙏
-        </Text>
+        <Animated.View entering={FadeInDown.duration(500)} style={styles.emptyContent}>
+          <View style={[styles.emptyIcon, { backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6" }]}>
+            <Heart size={38} color={isDarkMode ? "#D0BCFF" : "#8A4D24"} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: c.text }]}>No Favorites Yet</Text>
+          <Text style={[styles.emptySub, { color: c.sub }]}>
+            Tap the Favourite button while reading a verse to save it here 🙏
+          </Text>
+        </Animated.View>
       </LinearGradient>
     );
   }
 
-  /* 📜 FAVORITES LIST */
   return (
     <LinearGradient
-      colors={
-        isDarkMode
-          ? ["#1C1B1F", "#2B2930"]
-          : ["#FFF8F1", "#FFEAD7"]
-      }
-      className="flex-1"
+      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      style={{ flex: 1 }}
     >
       <ScrollView
-        className="px-6 pt-6"
-        contentContainerStyle={{ paddingBottom: 90 }}
+        contentContainerStyle={styles.scroll}
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustContentInsets={false}
+        showsVerticalScrollIndicator={false}
       >
-        <Text className={`text-3xl font-bold mb-6 ${textColor}`}>
-          ❤️ Your Favorite Verses
-        </Text>
+        {/* Page header */}
+        <View style={styles.pageHeader}>
+          <View style={styles.headerIconWrap}>
+            <Heart size={18} color="#C41E3A" fill="#C41E3A" />
+          </View>
+          <View>
+            <Text style={[styles.pageTitle, { color: c.text }]}>Saved Verses</Text>
+            <Text style={[styles.pageSub, { color: c.sub }]}>
+              {favorites.length} favorite{favorites.length !== 1 ? "s" : ""}
+            </Text>
+          </View>
+        </View>
+
+        <View style={[styles.divider, { backgroundColor: c.border }]} />
 
         {favorites.map((verse, index) => (
-          <TouchableOpacity
+          <Animated.View
             key={`${verse.chapter}_${verse.verse}_${index}`}
-            activeOpacity={0.85}
-            onPress={() =>
-              router.push({
-                pathname: "/home/chapters/[id]/[verse_id]",
-                params: {
-                  id: String(verse.chapter),
-                  verse_id: String(verse.verse),
-                  verses_count: String(verse.verses_count),
-                },
-              })
-            }
-            className={`mb-5 rounded-3xl p-5 ${sectionBg}`}
-            style={{
-              borderWidth: 1,
-              borderColor,
-              elevation: 3,
-            }}
+            entering={FadeInDown.duration(380).delay(index * 55)}
           >
-            {/* Accent Strip */}
-            <View className="border-l-4 border-[#D97706] pl-4">
-              <Text className={`text-base font-semibold ${textColor}`}>
-                Chapter {verse.chapter}, Verse {verse.verse}
-              </Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() =>
+                router.push({
+                  pathname: "/home/chapters/[id]/[verse_id]",
+                  params: {
+                    id: String(verse.chapter),
+                    verse_id: String(verse.verse),
+                    verses_count: String(verse.verses_count),
+                  },
+                })
+              }
+              style={[
+                styles.card,
+                {
+                  backgroundColor: c.card,
+                  borderColor: c.border,
+                  shadowOpacity: isDarkMode ? 0.25 : 0.07,
+                },
+              ]}
+            >
+              {/* Chapter/verse badge row */}
+              <View style={styles.cardTopRow}>
+                <View style={styles.refBadge}>
+                  <Text style={styles.refBadgeText}>
+                    CH {verse.chapter} · V {verse.verse}
+                  </Text>
+                </View>
+                <ChevronRight size={16} color={c.sub} />
+              </View>
 
-              <Text
-                className={`text-[16px] mt-2 leading-6 ${secondaryText}`}
-                numberOfLines={4}
-              >
-                {verse.slok}
-              </Text>
-            </View>
-          </TouchableOpacity>
+              {/* Sanskrit text with left accent */}
+              <View style={styles.verseAccentLine}>
+                <Text
+                  style={[styles.sanskritText, { color: c.text }]}
+                  numberOfLines={3}
+                >
+                  {verse.slok}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
         ))}
       </ScrollView>
     </LinearGradient>
   );
 }
+
+const styles = StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingText: { marginTop: 12, fontSize: 14 },
+
+  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  emptyContent: { alignItems: "center", paddingHorizontal: 40 },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  emptyTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8, textAlign: "center" },
+  emptySub: { fontSize: 14, textAlign: "center", lineHeight: 22 },
+
+  scroll: { padding: 20, paddingBottom: 110 },
+
+  pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 6, marginTop: 4 },
+  headerIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#C41E3A20",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  pageTitle: { fontSize: 22, fontWeight: "800" },
+  pageSub: { fontSize: 12, marginTop: 2 },
+  divider: { height: 1, marginVertical: 16 },
+
+  card: {
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  cardTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  refBadge: {
+    backgroundColor: "#C41E3A20",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  refBadgeText: { color: "#C41E3A", fontSize: 11, fontWeight: "800" },
+  verseAccentLine: { borderLeftWidth: 3, borderLeftColor: "#D97706", paddingLeft: 12 },
+  sanskritText: { fontSize: 15, fontWeight: "600", lineHeight: 24, fontStyle: "italic" },
+});

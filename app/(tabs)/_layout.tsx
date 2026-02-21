@@ -10,12 +10,13 @@ import {
   useSafeAreaInsets,
   SafeAreaProvider,
 } from "react-native-safe-area-context";
-import { setupDailyReminder } from "@/utils/notifications";
+import { initializeDailyReminder } from "@/utils/notifications";
 
+// Fix: shouldPlaySound must be true
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
-    shouldPlaySound: false,
+    shouldPlaySound: true,
     shouldSetBadge: false,
   }),
 });
@@ -37,7 +38,9 @@ function LayoutContent() {
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    setupDailyReminder();
+    // Fix: use initializeDailyReminder instead of setupDailyReminder
+    // This checks if already scheduled before creating a new one
+    initializeDailyReminder(7, 30);
   }, []);
 
   return (
@@ -47,35 +50,27 @@ function LayoutContent() {
           screenOptions={{
             headerShown: false,
             tabBarHideOnKeyboard: true,
-
             tabBarActiveTintColor: isDarkMode ? "#FFB59D" : "#8A4D24",
             tabBarInactiveTintColor: isDarkMode ? "#B8B2C1" : "#9A8F86",
-
             tabBarLabelStyle: {
               fontSize: 11,
               fontWeight: "600",
               marginTop: -2,
             },
-
             tabBarItemStyle: {
               paddingVertical: 6,
             },
-
             tabBarStyle: {
               position: "absolute",
               marginHorizontal: 16,
               marginBottom: insets.bottom > 0 ? insets.bottom : 10,
               height: 62 + insets.bottom,
               paddingBottom: insets.bottom,
-
               borderRadius: 32,
-
               backgroundColor: isDarkMode
                 ? "rgba(43, 41, 48, 0.95)"
                 : "rgba(255, 253, 249, 0.95)",
-
               borderTopWidth: 0,
-
               elevation: 4,
               shadowColor: "#000",
               shadowOpacity: 0.12,
@@ -91,7 +86,6 @@ function LayoutContent() {
               tabBarIcon: ({ color }) => <HomeIcon color={color} size={20} />,
             }}
           />
-
           <Tabs.Screen
             name="explore"
             options={{
@@ -101,7 +95,6 @@ function LayoutContent() {
           />
         </Tabs>
       </ThemedLayout>
-
       <Toast />
     </>
   );

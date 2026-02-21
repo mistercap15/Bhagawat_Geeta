@@ -6,21 +6,55 @@ const DAILY_NOTIFICATION_SETUP_KEY = "daily-gita-notification:v3";
 const DAILY_NOTIFICATION_ID_KEY = "daily-gita-notification:id";
 const DAILY_COMPLETION_FLAG_KEY = "daily-practice-complete:";
 
-// Set notification handler (call this in your App.tsx or index.tsx)
-export function initializeNotificationHandler() {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
+// ─── Safe init: only schedules if not already set up ────────────────────────
+export async function initializeDailyReminder(
+  hour: number = 7,
+  minute: number = 30
+) {
+  const alreadySetup = await isDailyReminderSetup();
+
+  if (alreadySetup) {
+    console.log("Daily reminder already exists, skipping setup");
+    return { scheduled: true, alreadyExists: true };
+  }
+
+  console.log("No reminder found, scheduling for the first time");
+  return await setupDailyReminder(hour, minute);
 }
 
-export async function setupDailyReminder(hour: number = 7, minute: number = 30) {
-  console.log(`Setting up daily reminder for ${hour}:${minute}`);
-  
-  // Android channel
+// ─── Check if a valid scheduled notification already exists ──────────────────
+async function isDailyReminderSetup(): Promise<boolean> {
+  const [isSetup, notificationId] = await Promise.all([
+    AsyncStorage.getItem(DAILY_NOTIFICATION_SETUP_KEY),
+    AsyncStorage.getItem(DAILY_NOTIFICATION_ID_KEY),
+  ]);
+
+  if (isSetup !== "true" || !notificationId) return false;
+
+  // Verify the notification still exists in the OS scheduler
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const stillExists = scheduled.some((n) => n.identifier === notificationId);
+
+  if (!stillExists) {
+    // Stored ID is stale, clear it so we reschedule next time
+    await AsyncStorage.multiRemove([
+      DAILY_NOTIFICATION_SETUP_KEY,
+      DAILY_NOTIFICATION_ID_KEY,
+    ]);
+    console.log("Stale notification ID cleared");
+    return false;
+  }
+
+  return true;
+}
+
+// ─── Force schedule (use when user changes time in settings) ─────────────────
+export async function setupDailyReminder(
+  hour: number = 7,
+  minute: number = 30
+) {
+  console.log(`Scheduling daily reminder for ${hour}:${minute}`);
+
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("daily-reminder", {
       name: "Daily Gita Reminder",
@@ -37,47 +71,47 @@ export async function setupDailyReminder(hour: number = 7, minute: number = 30) 
     return { scheduled: false };
   }
 
-  // CRITICAL: Cancel ALL scheduled notifications first
-  await Notifications.cancelAllScheduledNotificationsAsync();
-  console.log("Cancelled all existing notifications");
+  // Cancel any existing notification before creating new one
+  const existingId = await AsyncStorage.getItem(DAILY_NOTIFICATION_ID_KEY);
+  if (existingId) {
+    await Notifications.cancelScheduledNotificationAsync(existingId).catch(
+      () => null
+    );
+  }
 
-  // Clear stored IDs
-  await AsyncStorage.multiRemove([
-    DAILY_NOTIFICATION_SETUP_KEY,
-    DAILY_NOTIFICATION_ID_KEY,
-  ]);
-
-  // Schedule daily repeating notification with parameters
   const notificationId = await Notifications.scheduleNotificationAsync({
     content: {
       title: "🌅 Morning Gita Reflection",
       body: "Take 5 mindful minutes for one verse and its meaning.",
       sound: "default",
-      ...(Platform.OS === "android" && {
-        channelId: "daily-reminder",
-      }),
+      ...(Platform.OS === "android" && { channelId: "daily-reminder" }),
     },
     trigger: {
-      hour: hour,
-      minute: minute,
-      repeats: true,
-    } as Notifications.CalendarTriggerInput,
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+    },
   });
-
-  console.log(`Scheduled notification with ID: ${notificationId} for ${hour}:${minute}`);
 
   await AsyncStorage.multiSet([
     [DAILY_NOTIFICATION_SETUP_KEY, "true"],
     [DAILY_NOTIFICATION_ID_KEY, notificationId],
   ]);
 
-  // Verify notification was scheduled
-  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  console.log("All scheduled notifications after setup:", JSON.stringify(scheduled, null, 2));
-
-  return { scheduled: true, notificationId };
+  console.log(`Reminder scheduled: ID ${notificationId} at ${hour}:${minute}`);
+  return { scheduled: true, notificationId, alreadyExists: false };
 }
 
+// ─── Reset (e.g. user changes time in settings) ──────────────────────────────
+export async function resetDailyReminder(
+  hour: number = 7,
+  minute: number = 30
+) {
+  await cancelAllNotifications();
+  return await setupDailyReminder(hour, minute);
+}
+
+// ─── Practice complete notification (fires immediately, once per day) ─────────
 export async function sendPracticeCompleteNotification() {
   const todayKey = new Date().toISOString().split("T")[0];
   const flagKey = DAILY_COMPLETION_FLAG_KEY + todayKey;
@@ -90,9 +124,7 @@ export async function sendPracticeCompleteNotification() {
       title: "🙏 Sadhana Complete",
       body: "You completed today's Gita practice. Beautiful consistency.",
       sound: "default",
-      ...(Platform.OS === "android" && {
-        channelId: "daily-reminder",
-      }),
+      ...(Platform.OS === "android" && { channelId: "daily-reminder" }),
     },
     trigger: null,
   });
@@ -100,53 +132,12 @@ export async function sendPracticeCompleteNotification() {
   await AsyncStorage.setItem(flagKey, "true");
 }
 
-// Helper function to test with current time + offset
-export async function setupTestNotification(minutesFromNow: number = 1) {
-  const now = new Date();
-  now.setMinutes(now.getMinutes() + minutesFromNow);
-  
-  const testHour = now.getHours();
-  const testMinute = now.getMinutes();
-
-  console.log(`Setting up TEST notification for ${testHour}:${testMinute} (${minutesFromNow} minutes from now)`);
-
-  // Cancel all first
-  await Notifications.cancelAllScheduledNotificationsAsync();
-
-  const notificationId = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: "🧪 TEST - Morning Gita Reflection",
-      body: `This should appear at ${testHour}:${testMinute}`,
-      sound: "default",
-      ...(Platform.OS === "android" && {
-        channelId: "daily-reminder",
-      }),
-    },
-    trigger: {
-      hour: testHour,
-      minute: testMinute,
-      repeats: true,
-    } as Notifications.CalendarTriggerInput,
-  });
-
-  console.log("Test notification scheduled:", {
-    hour: testHour,
-    minute: testMinute,
-    id: notificationId,
-  });
-
-  // Verify
-  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  console.log("Scheduled notifications:", JSON.stringify(scheduled, null, 2));
-
-  return notificationId;
-}
-
-// Helper to check what notifications are scheduled
+// ─── Debug helpers ────────────────────────────────────────────────────────────
 export async function checkScheduledNotifications() {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  console.log("Currently scheduled notifications:", 
-    scheduled.map(n => ({
+  console.log(
+    "Scheduled notifications:",
+    scheduled.map((n) => ({
       id: n.identifier,
       trigger: n.trigger,
       title: n.content.title,
@@ -155,12 +146,37 @@ export async function checkScheduledNotifications() {
   return scheduled;
 }
 
-// Helper to cancel all notifications
 export async function cancelAllNotifications() {
   await Notifications.cancelAllScheduledNotificationsAsync();
   await AsyncStorage.multiRemove([
     DAILY_NOTIFICATION_SETUP_KEY,
     DAILY_NOTIFICATION_ID_KEY,
   ]);
-  console.log("All notifications cancelled and storage cleared");
+  console.log("All notifications cancelled");
+}
+
+// ─── Test helper: fires X minutes from now ────────────────────────────────────
+export async function setupTestNotification(minutesFromNow: number = 1) {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() + minutesFromNow);
+
+  const testHour = now.getHours();
+  const testMinute = now.getMinutes();
+
+  const notificationId = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "🧪 TEST - Gita Reminder",
+      body: `Should appear in ~${minutesFromNow} minute(s)`,
+      sound: "default",
+      ...(Platform.OS === "android" && { channelId: "daily-reminder" }),
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: minutesFromNow * 60,
+      repeats: false,
+    },
+  });
+
+  console.log(`Test notification set for ${testHour}:${testMinute}`, notificationId);
+  return notificationId;
 }
