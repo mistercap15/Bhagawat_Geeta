@@ -3,6 +3,9 @@ import { Text, ScrollView, View, StyleSheet } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { FileText } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const TAB_BAR_HEIGHT = 62;
 
 const SECTIONS = [
   {
@@ -25,6 +28,7 @@ const SECTIONS = [
 
 const TermsAndConditions = () => {
   const { isDarkMode } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const c = {
     text: isDarkMode ? "#E8DEF8" : "#3E2723",
@@ -39,9 +43,11 @@ const TermsAndConditions = () => {
       style={{ flex: 1 }}
     >
       <ScrollView
-        contentInsetAdjustmentBehavior="never"
-        contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 40 },
+        ]}
       >
         {/* Header */}
         <View style={styles.pageHeader}>
@@ -49,8 +55,12 @@ const TermsAndConditions = () => {
             <FileText size={20} color="#3B82F6" />
           </View>
           <View>
-            <Text style={[styles.pageTitle, { color: c.text }]}>Terms & Conditions</Text>
-            <Text style={[styles.pageSub, { color: c.sub }]}>Last updated: January 2025</Text>
+            <Text style={[styles.pageTitle, { color: c.text }]}>
+              Terms & Conditions
+            </Text>
+            <Text style={[styles.pageSub, { color: c.sub }]}>
+              Last updated: January 2025
+            </Text>
           </View>
         </View>
 
@@ -59,10 +69,17 @@ const TermsAndConditions = () => {
         {SECTIONS.map((section, i) => (
           <View
             key={i}
-            style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}
+            style={[
+              styles.card,
+              { backgroundColor: c.card, borderColor: c.border },
+            ]}
           >
-            <Text style={[styles.cardTitle, { color: c.text }]}>{section.title}</Text>
-            <Text style={[styles.cardBody, { color: c.sub }]}>{section.body}</Text>
+            <Text style={[styles.cardTitle, { color: c.text }]}>
+              {section.title}
+            </Text>
+            <Text style={[styles.cardBody, { color: c.sub }]}>
+              {section.body}
+            </Text>
           </View>
         ))}
 
@@ -77,12 +94,25 @@ const TermsAndConditions = () => {
 export default TermsAndConditions;
 
 const styles = StyleSheet.create({
-  scroll: { padding: 24, paddingBottom: 60 },
+  container: { padding: 24 },
 
-  pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4, marginBottom: 6 },
-  headerIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
+  pageHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 4,
+    marginBottom: 6,
+  },
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   pageTitle: { fontSize: 22, fontWeight: "800" },
   pageSub: { fontSize: 12, marginTop: 2 },
+
   divider: { height: 1, marginVertical: 18 },
 
   card: {
@@ -99,5 +129,10 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15, fontWeight: "700", marginBottom: 7 },
   cardBody: { fontSize: 14, lineHeight: 22 },
 
-  closing: { textAlign: "center", fontSize: 14, marginTop: 8, fontStyle: "italic" },
+  closing: {
+    textAlign: "center",
+    fontSize: 14,
+    marginTop: 8,
+    fontStyle: "italic",
+  },
 });

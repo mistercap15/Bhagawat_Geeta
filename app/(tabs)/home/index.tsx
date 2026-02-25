@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
+  Platform,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import {
@@ -21,6 +22,7 @@ import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import { getSlok } from "@/utils/gitaData";
 import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system";
 import { captureRef } from "react-native-view-shot";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
@@ -80,7 +82,7 @@ export default function HomeScreen() {
   const [error, setError] = useState(false);
   const router = useRouter();
   const { isDarkMode } = useTheme();
-  const viewRef = useRef<any>(null);
+  const viewRef = useRef<View>(null);
 
   const c = {
     bg: isDarkMode ? "#1C1B1F" : "#FFF8F1",
@@ -144,7 +146,14 @@ export default function HomeScreen() {
 
   const shareShloka = async () => {
     try {
-      if (!viewRef.current) return;
+      if (!viewRef.current) {
+        Toast.show({
+          type: "error",
+          text1: "Unable to capture verse. Please try again.",
+        });
+        return;
+      }
+
       const isAvailable = await Sharing.isAvailableAsync();
       if (!isAvailable) {
         Toast.show({
@@ -153,19 +162,42 @@ export default function HomeScreen() {
         });
         return;
       }
-      await new Promise((r) => setTimeout(r, 300));
-      const uri = await captureRef(viewRef, {
+
+      // Give the UI time to settle before capturing
+      await new Promise((r) => setTimeout(r, 500));
+
+      // FIX 1: Use base64 result instead of tmpfile.
+      // On real Android devices, tmpfile paths from captureRef can be
+      // inaccessible to other apps due to scoped storage restrictions.
+      const base64 = await captureRef(viewRef, {
         format: "png",
         quality: 1,
-        result: "tmpfile",
+        result: "base64",
       });
-      await Sharing.shareAsync(uri);
+
+      // FIX 2: Write to a known cache directory path with proper file extension.
+      // This ensures the file URI is valid and accessible for sharing intents.
+      const filename = `shloka_${Date.now()}.png`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+      await FileSystem.writeAsStringAsync(fileUri, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // FIX 3: Use proper mimeType for Android share intent
+      await Sharing.shareAsync(fileUri, {
+        mimeType: "image/png",
+        dialogTitle: "Share Shloka",
+        UTI: "public.png", // for iOS
+      });
+
       Toast.show({
         type: "success",
         text1: "Shloka Shared!",
         text2: "Spreading divine wisdom 🙏",
       });
-    } catch {
+    } catch (err) {
+      console.error("Share error:", err);
       Toast.show({
         type: "error",
         text1: "Could not share. Please try again.",
@@ -211,6 +243,10 @@ export default function HomeScreen() {
 
         {/* ── Shloka of the Day ── */}
         <Animated.View entering={FadeInDown.duration(500).delay(150)}>
+          {/* FIX 4: The capturable View is now a plain RN View (NOT inside
+              Animated.View's ref chain). collapsable={false} is critical on
+              Android — it prevents the native framework from optimizing away
+              the view, which would make captureRef fail silently. */}
           <View
             ref={viewRef}
             collapsable={false}

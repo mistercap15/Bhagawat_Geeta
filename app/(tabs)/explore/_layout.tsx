@@ -25,11 +25,11 @@ export default function ExploreLayout() {
           name="index"
           options={{ title: "Explore", headerShown: false }}
         />
-        <Stack.Screen name="termsCondition" options={{ title: "Terms & Conditions" }} />
-        <Stack.Screen name="privacyPolicy" options={{ title: "Privacy Policy" }} />
-        <Stack.Screen name="contactSupport" options={{ title: "Contact Support" }} />
-        <Stack.Screen name="rateApp" options={{ title: "Rate App" }} />
-        <Stack.Screen name="about" options={{ title: "About Us" }} />
+        <Stack.Screen name="termsCondition" options={{ title: "Terms & Conditions" , headerShown: false }} />
+        <Stack.Screen name="privacyPolicy" options={{ title: "Privacy Policy", headerShown: false }} />
+        <Stack.Screen name="contactSupport" options={{ title: "Contact Support", headerShown: false }} />
+        <Stack.Screen name="rateApp" options={{ title: "Rate App" , headerShown: false}} />
+        <Stack.Screen name="about" options={{ title: "About Us", headerShown: false }} />
       </Stack>
     </View>
   );

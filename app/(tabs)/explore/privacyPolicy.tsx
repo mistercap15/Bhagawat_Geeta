@@ -3,6 +3,7 @@ import { Text, ScrollView, View, StyleSheet } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { Shield } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const SECTIONS = [
   {
@@ -22,10 +23,10 @@ const SECTIONS = [
     body: "This app is and will remain completely ad-free. Your spiritual practice deserves peace and focus.",
   },
 ];
-
+const TAB_BAR_HEIGHT = 62;
 const PrivacyPolicy = () => {
   const { isDarkMode } = useTheme();
-
+  const insets = useSafeAreaInsets();
   const c = {
     text: isDarkMode ? "#E8DEF8" : "#3E2723",
     sub: isDarkMode ? "#CAC4D0" : "#625B71",
@@ -38,11 +39,13 @@ const PrivacyPolicy = () => {
       colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
       style={{ flex: 1 }}
     >
-      <ScrollView
-        contentInsetAdjustmentBehavior="never"
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
+     <ScrollView
+  showsVerticalScrollIndicator={false}
+  contentContainerStyle={[
+    styles.container,
+    { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 40 },
+  ]}
+>
         {/* Header */}
         <View style={styles.pageHeader}>
           <View style={[styles.headerIcon, { backgroundColor: "#22C55E20" }]}>
@@ -77,8 +80,7 @@ const PrivacyPolicy = () => {
 export default PrivacyPolicy;
 
 const styles = StyleSheet.create({
-  scroll: { padding: 24, paddingBottom: 60 },
-
+  container: { padding: 24 },
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4, marginBottom: 6 },
   headerIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
   pageTitle: { fontSize: 22, fontWeight: "800" },

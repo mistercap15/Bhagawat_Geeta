@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   StyleSheet,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,8 +15,6 @@ import {
   Heart,
   CheckSquare,
   Square,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Animated, {
@@ -24,18 +23,260 @@ import Animated, {
   withTiming,
   withSpring,
   withSequence,
+  withDelay,
   runOnJS,
   interpolate,
   Extrapolate,
+  Easing,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { PanGestureHandler } from "react-native-gesture-handler";
 import { getSlok } from "@/utils/gitaData";
 import { useTheme } from "@/context/ThemeContext";
 import MaterialLoader from "@/components/MaterialLoader";
+import { sendPracticeCompleteNotification } from "@/utils/notifications";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
+const CARD_HORIZONTAL_PADDING = 20;
+const CARD_WIDTH = SCREEN_WIDTH - CARD_HORIZONTAL_PADDING * 2;
+const SWIPE_THRESHOLD = CARD_WIDTH * 0.25;
+
+// ─── PROGRESSIVE CURL CONSTANTS ──────────────────────────────────
+const CURL_MIN_WIDTH = 4;
+const CURL_MAX_WIDTH = 50;
+const SHADOW_MAX_WIDTH = 35;
+const HIGHLIGHT_WIDTH = 3;
+
+// ─── CONFETTI / CELEBRATION CONSTANTS ────────────────────────────
+const PARTICLE_COUNT = 12;
+const FAV_EMOJIS = ["❤️", "💖", "💕", "✨", "💗", "🌟", "💝", "♥️"];
+const READ_EMOJIS = ["✅", "⭐", "🎉", "✨", "🌟", "💫", "🎊", "🏆"];
+
+// ─── SHARED CURL WIDTH FUNCTION ──────────────────────────────────
+function computeCurlWidth(absP: number): number {
+  "worklet";
+  return interpolate(
+    absP,
+    [
+      0,
+      CARD_WIDTH * 0.03,
+      CARD_WIDTH * 0.12,
+      CARD_WIDTH * 0.25,
+      CARD_WIDTH * 0.88,
+      CARD_WIDTH * 0.96,
+      CARD_WIDTH,
+    ],
+    [
+      0,
+      CURL_MIN_WIDTH,
+      CURL_MAX_WIDTH * 0.6,
+      CURL_MAX_WIDTH,
+      CURL_MAX_WIDTH,
+      CURL_MAX_WIDTH * 0.35,
+      0,
+    ],
+    Extrapolate.CLAMP,
+  );
+}
+
+function computeShadowWidth(absP: number): number {
+  "worklet";
+  return interpolate(
+    absP,
+    [
+      0,
+      CARD_WIDTH * 0.03,
+      CARD_WIDTH * 0.12,
+      CARD_WIDTH * 0.25,
+      CARD_WIDTH * 0.85,
+      CARD_WIDTH * 0.95,
+      CARD_WIDTH,
+    ],
+    [
+      0,
+      4,
+      SHADOW_MAX_WIDTH * 0.5,
+      SHADOW_MAX_WIDTH,
+      SHADOW_MAX_WIDTH,
+      SHADOW_MAX_WIDTH * 0.25,
+      0,
+    ],
+    Extrapolate.CLAMP,
+  );
+}
+
+function computeIntensity(absP: number): number {
+  "worklet";
+  return interpolate(
+    absP,
+    [
+      0,
+      CARD_WIDTH * 0.04,
+      CARD_WIDTH * 0.2,
+      CARD_WIDTH * 0.85,
+      CARD_WIDTH * 0.95,
+      CARD_WIDTH,
+    ],
+    [0, 0.3, 1, 1, 0.3, 0],
+    Extrapolate.CLAMP,
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  CELEBRATION PARTICLE COMPONENT
+// ═══════════════════════════════════════════════════════════════════
+interface ParticleData {
+  id: number;
+  emoji: string;
+  angle: number;
+  distance: number;
+  spinEnd: number;
+  delay: number;
+  scale: number;
+}
+
+function CelebrationParticle({
+  particle,
+  trigger,
+}: {
+  particle: ParticleData;
+  trigger: number;
+}) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    if (trigger === 0) return;
+    progress.value = 0;
+    progress.value = withDelay(
+      particle.delay,
+      withTiming(1, {
+        duration: 900 + Math.random() * 400,
+        easing: Easing.out(Easing.cubic),
+      }),
+    );
+  }, [trigger]);
+
+  const animStyle = useAnimatedStyle(() => {
+    const p = progress.value;
+    const x = Math.cos(particle.angle) * particle.distance * p;
+    const yBurst = Math.sin(particle.angle) * particle.distance * p;
+    const gravity = 120 * p * p;
+    const y = yBurst + gravity;
+
+    const rotation = particle.spinEnd * p;
+    const scale = interpolate(
+      p,
+      [0, 0.15, 0.5, 0.85, 1],
+      [0, particle.scale * 1.3, particle.scale, particle.scale * 0.6, 0],
+      Extrapolate.CLAMP,
+    );
+    const opacity = interpolate(
+      p,
+      [0, 0.1, 0.7, 1],
+      [0, 1, 1, 0],
+      Extrapolate.CLAMP,
+    );
+
+    return {
+      transform: [
+        { translateX: x },
+        { translateY: y },
+        { rotate: `${rotation}deg` },
+        { scale },
+      ],
+      opacity,
+    };
+  });
+
+  return (
+    <Animated.View style={[styles.particle, animStyle]}>
+      <Text style={styles.particleEmoji}>{particle.emoji}</Text>
+    </Animated.View>
+  );
+}
+
+// ─── CELEBRATION BURST CONTAINER ─────────────────────────────────
+function CelebrationBurst({
+  type,
+  trigger,
+}: {
+  type: "favorite" | "read";
+  trigger: number;
+}) {
+  const emojis = type === "favorite" ? FAV_EMOJIS : READ_EMOJIS;
+
+  const particles = useMemo<ParticleData[]>(() => {
+    return Array.from({ length: PARTICLE_COUNT }, (_, i) => {
+      const angleSpread = Math.PI * 1.6;
+      const baseAngle = -Math.PI / 2 - angleSpread / 2;
+      const angle = baseAngle + (i / (PARTICLE_COUNT - 1)) * angleSpread;
+
+      return {
+        id: i,
+        emoji: emojis[i % emojis.length],
+        angle,
+        distance: 55 + Math.random() * 75,
+        spinEnd: (Math.random() - 0.5) * 540,
+        delay: i * 30 + Math.random() * 50,
+        scale: 0.7 + Math.random() * 0.6,
+      };
+    });
+  }, [type]);
+
+  return (
+    <View style={styles.burstContainer} pointerEvents="none">
+      {particles.map((p) => (
+        <CelebrationParticle key={p.id} particle={p} trigger={trigger} />
+      ))}
+    </View>
+  );
+}
+
+// ─── GLOW RING COMPONENT ─────────────────────────────────────────
+function GlowRing({
+  trigger,
+  color,
+}: {
+  trigger: number;
+  color: string;
+}) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    if (trigger === 0) return;
+    progress.value = 0;
+    progress.value = withTiming(1, {
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [trigger]);
+
+  const ringStyle = useAnimatedStyle(() => {
+    const p = progress.value;
+    const scale = interpolate(p, [0, 1], [0.5, 2.8], Extrapolate.CLAMP);
+    const opacity = interpolate(
+      p,
+      [0, 0.2, 0.6, 1],
+      [0, 0.5, 0.2, 0],
+      Extrapolate.CLAMP,
+    );
+
+    return {
+      transform: [{ scale }],
+      opacity,
+      borderColor: color,
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[styles.glowRing, ringStyle]}
+      pointerEvents="none"
+    />
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
 
 export default function VerseDetails() {
   const { id, verse_id, verses_count } = useLocalSearchParams();
@@ -54,9 +295,15 @@ export default function VerseDetails() {
   const [isRead, setIsRead] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const translateX = useSharedValue(0);
+  // Celebration triggers
+  const [favCelebration, setFavCelebration] = useState(0);
+  const [readCelebration, setReadCelebration] = useState(0);
+
+  const swipeProgress = useSharedValue(0);
   const favScale = useSharedValue(1);
   const readScale = useSharedValue(1);
+  const favGlow = useSharedValue(0);
+  const readGlow = useSharedValue(0);
 
   const palette = useMemo(
     () => ({
@@ -71,7 +318,10 @@ export default function VerseDetails() {
       innerCard: isDarkMode ? "#312C3A" : "#FDF2E5",
       shadow: isDarkMode ? "rgba(0,0,0,0.6)" : "rgba(138,77,36,0.2)",
       bookmark: "#C41E3A",
-      curlOverlay: isDarkMode ? "#2A2630" : "#FFFFFF",
+      foldBack: isDarkMode ? "#2A2530" : "#E8D9C8",
+      foldHighlight: isDarkMode
+        ? "rgba(255,255,255,0.12)"
+        : "rgba(255,255,255,0.85)",
     }),
     [isDarkMode],
   );
@@ -84,7 +334,39 @@ export default function VerseDetails() {
     transform: [{ scale: readScale.value }],
   }));
 
-  // ─── EXACTLY LIKE OLD CODE - Simple per-verse storage ─────────
+  const favGlowStyle = useAnimatedStyle(() => {
+    return {
+      opacity: favGlow.value,
+      transform: [
+        {
+          scale: interpolate(
+            favGlow.value,
+            [0, 1],
+            [1, 1.8],
+            Extrapolate.CLAMP,
+          ),
+        },
+      ],
+    };
+  });
+
+  const readGlowStyle = useAnimatedStyle(() => {
+    return {
+      opacity: readGlow.value,
+      transform: [
+        {
+          scale: interpolate(
+            readGlow.value,
+            [0, 1],
+            [1, 1.8],
+            Extrapolate.CLAMP,
+          ),
+        },
+      ],
+    };
+  });
+
+  // ─── Data Loading ──────────────────────────────────────────────
   const loadVerse = async (verseId: number) => {
     const data = await getSlok(chapterId, verseId);
     setVerse(data);
@@ -123,6 +405,7 @@ export default function VerseDetails() {
       setLoading(false);
     })();
   }, [initialVerseId]);
+
   useEffect(() => {
     if (!currentVerseId) return;
 
@@ -141,151 +424,281 @@ export default function VerseDetails() {
       }
     };
 
-    // Run AFTER render settles
     const timeout = setTimeout(persistLastRead, 0);
-
     return () => clearTimeout(timeout);
   }, [currentVerseId]);
 
-  // ─── EXACTLY LIKE OLD CODE ─────────────────────────────────────
-  const changeVerse = async (direction: "next" | "prev") => {
-    const nextId =
-      direction === "next" ? currentVerseId + 1 : currentVerseId - 1;
+  // ─── Verse Change ──────────────────────────────────────────────
+  const changeVerse = useCallback(
+    async (direction: "next" | "prev") => {
+      const nextId =
+        direction === "next" ? currentVerseId + 1 : currentVerseId - 1;
 
-    if (nextId < 1 || nextId > versesCount) {
-      translateX.value = withTiming(0, { duration: 300 });
-      return;
-    }
+      if (nextId < 1 || nextId > versesCount) {
+        swipeProgress.value = withTiming(0, { duration: 250 });
+        return;
+      }
 
-    setCurrentVerseId(nextId);
+      setCurrentVerseId(nextId);
+      await loadVerse(nextId);
+      await loadAdjacentVerses(nextId);
 
-    // Only load UI data
-    await loadVerse(nextId);
-    await loadAdjacentVerses(nextId);
-
-    translateX.value = 0;
-  };
+      swipeProgress.value = 0;
+    },
+    [currentVerseId, versesCount, chapterId],
+  );
 
   // ─── Gesture Handlers ──────────────────────────────────────────
-  const onGestureEvent = (e: any) => {
-    const translationX = e.nativeEvent.translationX;
-    const translationY = e.nativeEvent.translationY;
+  const onGestureEvent = useCallback(
+    (e: any) => {
+      const tx = e.nativeEvent.translationX;
+      const ty = e.nativeEvent.translationY;
 
-    // Ignore if mostly vertical movement
-    if (Math.abs(translationY) > Math.abs(translationX)) return;
+      if (Math.abs(ty) > Math.abs(tx) * 1.3) return;
 
-    translateX.value = translationX;
-  };
+      if (tx < 0 && !nextVerse) {
+        swipeProgress.value = tx * 0.12;
+        return;
+      }
+      if (tx > 0 && !prevVerse) {
+        swipeProgress.value = tx * 0.12;
+        return;
+      }
 
-  const onGestureEnd = (e: any) => {
-    const translationY = e.nativeEvent.translationY;
+      swipeProgress.value = Math.max(-CARD_WIDTH, Math.min(CARD_WIDTH, tx));
+    },
+    [nextVerse, prevVerse],
+  );
 
-    if (Math.abs(translationY) > Math.abs(translateX.value)) {
-      translateX.value = withTiming(0, { duration: 300 });
-      return;
-    }
+  const onGestureEnd = useCallback(
+    (e: any) => {
+      const ty = e.nativeEvent.translationY;
+      const velocityX = e.nativeEvent.velocityX || 0;
 
-    if (Math.abs(translateX.value) > SWIPE_THRESHOLD) {
-      const dir = translateX.value < 0 ? "next" : "prev";
-      translateX.value = withTiming(
-        translateX.value < 0 ? -SCREEN_WIDTH : SCREEN_WIDTH,
-        { duration: 350 },
-        () => runOnJS(changeVerse)(dir),
-      );
+      if (Math.abs(ty) > Math.abs(swipeProgress.value)) {
+        swipeProgress.value = withTiming(0, { duration: 250 });
+        return;
+      }
+
+      const absProgress = Math.abs(swipeProgress.value);
+      const fastSwipe = Math.abs(velocityX) > 500;
+
+      if (absProgress > SWIPE_THRESHOLD || fastSwipe) {
+        const dir = swipeProgress.value < 0 ? "next" : "prev";
+        const target = swipeProgress.value < 0 ? -CARD_WIDTH : CARD_WIDTH;
+
+        swipeProgress.value = withTiming(
+          target,
+          {
+            duration: interpolate(
+              absProgress,
+              [SWIPE_THRESHOLD, CARD_WIDTH],
+              [350, 200],
+              Extrapolate.CLAMP,
+            ),
+            easing: Easing.out(Easing.cubic),
+          },
+          () => runOnJS(changeVerse)(dir),
+        );
+      } else {
+        swipeProgress.value = withTiming(0, {
+          duration: 280,
+          easing: Easing.out(Easing.cubic),
+        });
+      }
+    },
+    [changeVerse],
+  );
+
+  // ═══════════════════════════════════════════════════════════════
+  //  PAGE CURL ANIMATED STYLES
+  // ═══════════════════════════════════════════════════════════════
+
+  const currentPageClipStyle = useAnimatedStyle(() => {
+    const p = swipeProgress.value;
+    if (p === 0) return { width: CARD_WIDTH, left: 0 };
+
+    const absP = Math.min(Math.abs(p), CARD_WIDTH);
+    const curlW = computeCurlWidth(absP);
+    const currentW = Math.max(0, CARD_WIDTH - absP - curlW / 2);
+
+    if (p < 0) {
+      return { width: currentW, left: 0 };
     } else {
-      translateX.value = withTiming(0, { duration: 300 });
+      const clipLeft = CARD_WIDTH - currentW;
+      return { width: currentW, left: clipLeft };
     }
-  };
-
-  // ─── Animated Styles ───────────────────────────────────────────
-  const currentPageAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  const nextPageAnimatedStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      translateX.value,
-      [0, -SCREEN_WIDTH / 2],
-      [0, 1],
-      Extrapolate.CLAMP,
-    );
-    return { opacity };
   });
 
-  const prevPageAnimatedStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      translateX.value,
-      [0, SCREEN_WIDTH / 2],
-      [0, 1],
-      Extrapolate.CLAMP,
-    );
-    return { opacity };
+  const currentPageInnerStyle = useAnimatedStyle(() => {
+    const p = swipeProgress.value;
+    if (p <= 0) return { left: 0 };
+
+    const absP = Math.min(p, CARD_WIDTH);
+    const curlW = computeCurlWidth(absP);
+    const currentW = Math.max(0, CARD_WIDTH - absP - curlW / 2);
+    const clipLeft = CARD_WIDTH - currentW;
+
+    return { left: -clipLeft };
   });
 
-  const curlOverlayRightStyle = useAnimatedStyle(() => {
-    const isSwipingLeft = translateX.value < 0;
-    if (!isSwipingLeft) return { opacity: 0, width: 0 };
+  const nextPageClipStyle = useAnimatedStyle(() => {
+    if (swipeProgress.value >= 0) return { width: 0, opacity: 0, right: 0 };
 
-    const overlayWidth = interpolate(
-      Math.abs(translateX.value),
-      [0, SCREEN_WIDTH],
-      [0, SCREEN_WIDTH],
-      Extrapolate.CLAMP,
-    );
+    const absP = Math.min(Math.abs(swipeProgress.value), CARD_WIDTH);
+    const curlW = computeCurlWidth(absP);
+    const revealW = Math.max(0, absP - curlW / 2);
 
-    const overlayOpacity = interpolate(
-      Math.abs(translateX.value),
-      [0, SCREEN_WIDTH * 0.2],
-      [0, 0.95],
-      Extrapolate.CLAMP,
-    );
-
-    const shadowOpacity = interpolate(
-      Math.abs(translateX.value),
-      [0, SCREEN_WIDTH * 0.5],
-      [0, 0.6],
-      Extrapolate.CLAMP,
-    );
-
-    return { opacity: overlayOpacity, width: overlayWidth, shadowOpacity };
+    return {
+      width: revealW,
+      opacity: absP > 5 ? 1 : 0,
+      right: 0,
+    };
   });
 
-  const curlOverlayLeftStyle = useAnimatedStyle(() => {
-    const isSwipingRight = translateX.value > 0;
-    if (!isSwipingRight) return { opacity: 0, width: 0 };
+  const nextPageInnerStyle = useAnimatedStyle(() => {
+    if (swipeProgress.value >= 0) return { left: 0 };
 
-    const overlayWidth = interpolate(
-      Math.abs(translateX.value),
-      [0, SCREEN_WIDTH],
-      [0, SCREEN_WIDTH],
-      Extrapolate.CLAMP,
-    );
+    const absP = Math.min(Math.abs(swipeProgress.value), CARD_WIDTH);
+    const curlW = computeCurlWidth(absP);
+    const revealW = Math.max(0, absP - curlW / 2);
 
-    const overlayOpacity = interpolate(
-      Math.abs(translateX.value),
-      [0, SCREEN_WIDTH * 0.2],
-      [0, 0.95],
-      Extrapolate.CLAMP,
-    );
-
-    const shadowOpacity = interpolate(
-      Math.abs(translateX.value),
-      [0, SCREEN_WIDTH * 0.5],
-      [0, 0.6],
-      Extrapolate.CLAMP,
-    );
-
-    return { opacity: overlayOpacity, width: overlayWidth, shadowOpacity };
+    return { left: -(CARD_WIDTH - revealW) };
   });
 
-  // ─── Toggles - EXACTLY LIKE OLD CODE ──────────────────────────
+  const prevPageClipStyle = useAnimatedStyle(() => {
+    if (swipeProgress.value <= 0) return { width: 0, opacity: 0, left: 0 };
+
+    const absP = Math.min(swipeProgress.value, CARD_WIDTH);
+    const curlW = computeCurlWidth(absP);
+    const revealW = Math.max(0, absP - curlW / 2);
+
+    return {
+      width: revealW,
+      opacity: absP > 5 ? 1 : 0,
+      left: 0,
+    };
+  });
+
+  const prevPageInnerStyle = useAnimatedStyle(() => {
+    return { left: 0 };
+  });
+
+  const foldBackRightStyle = useAnimatedStyle(() => {
+    if (swipeProgress.value >= 0) return { opacity: 0, width: 0, left: -100 };
+
+    const absP = Math.min(Math.abs(swipeProgress.value), CARD_WIDTH);
+    const curlW = computeCurlWidth(absP);
+    const currentW = Math.max(0, CARD_WIDTH - absP - curlW / 2);
+
+    return {
+      opacity: absP > 3 ? 1 : 0,
+      width: curlW,
+      left: currentW,
+    };
+  });
+
+  const foldBackLeftStyle = useAnimatedStyle(() => {
+    if (swipeProgress.value <= 0) return { opacity: 0, width: 0, left: -100 };
+
+    const absP = Math.min(swipeProgress.value, CARD_WIDTH);
+    const curlW = computeCurlWidth(absP);
+    const revealW = Math.max(0, absP - curlW / 2);
+
+    return {
+      opacity: absP > 3 ? 1 : 0,
+      width: curlW,
+      left: revealW,
+    };
+  });
+
+  const shadowRightStyle = useAnimatedStyle(() => {
+    if (swipeProgress.value >= 0) return { opacity: 0, left: -200, width: 0 };
+
+    const absP = Math.min(Math.abs(swipeProgress.value), CARD_WIDTH);
+    const curlW = computeCurlWidth(absP);
+    const shadowW = computeShadowWidth(absP);
+    const intensity = computeIntensity(absP);
+    const currentW = Math.max(0, CARD_WIDTH - absP - curlW / 2);
+
+    return {
+      opacity: intensity,
+      width: shadowW,
+      left: Math.max(0, currentW - shadowW),
+    };
+  });
+
+  const shadowLeftStyle = useAnimatedStyle(() => {
+    if (swipeProgress.value <= 0) return { opacity: 0, left: -200, width: 0 };
+
+    const absP = Math.min(swipeProgress.value, CARD_WIDTH);
+    const curlW = computeCurlWidth(absP);
+    const shadowW = computeShadowWidth(absP);
+    const intensity = computeIntensity(absP);
+    const revealW = Math.max(0, absP - curlW / 2);
+
+    return {
+      opacity: intensity,
+      width: shadowW,
+      left: revealW + curlW,
+    };
+  });
+
+  const highlightRightStyle = useAnimatedStyle(() => {
+    if (swipeProgress.value >= 0) return { opacity: 0, left: -200 };
+
+    const absP = Math.min(Math.abs(swipeProgress.value), CARD_WIDTH);
+    const curlW = computeCurlWidth(absP);
+    const intensity = computeIntensity(absP);
+    const currentW = Math.max(0, CARD_WIDTH - absP - curlW / 2);
+
+    return {
+      opacity: intensity,
+      left: currentW + curlW - 1,
+    };
+  });
+
+  const highlightLeftStyle = useAnimatedStyle(() => {
+    if (swipeProgress.value <= 0) return { opacity: 0, left: -200 };
+
+    const absP = Math.min(swipeProgress.value, CARD_WIDTH);
+    const curlW = computeCurlWidth(absP);
+    const intensity = computeIntensity(absP);
+    const revealW = Math.max(0, absP - curlW / 2);
+
+    return {
+      opacity: intensity,
+      left: revealW - HIGHLIGHT_WIDTH + 1,
+    };
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  //  TOGGLE HANDLERS WITH CELEBRATION + GOAL NOTIFICATION
+  // ═══════════════════════════════════════════════════════════════
+
   const toggleFavorite = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    favScale.value = withSequence(
-      withTiming(0.82, { duration: 100 }),
-      withSpring(1, { damping: 6, stiffness: 250 }),
-    );
     const v = !isFavorite;
+
+    if (v) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      favScale.value = withSequence(
+        withTiming(0.7, { duration: 80 }),
+        withSpring(1.2, { damping: 4, stiffness: 300 }),
+        withSpring(1, { damping: 8, stiffness: 200 }),
+      );
+      favGlow.value = withSequence(
+        withTiming(0.8, { duration: 150 }),
+        withTiming(0, { duration: 500, easing: Easing.out(Easing.cubic) }),
+      );
+      setFavCelebration((c) => c + 1);
+    } else {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      favScale.value = withSequence(
+        withTiming(0.85, { duration: 100 }),
+        withSpring(1, { damping: 6, stiffness: 250 }),
+      );
+    }
+
     setIsFavorite(v);
     const key = `favorite_verse_${chapterId}_${currentVerseId}`;
     if (v) {
@@ -296,14 +709,10 @@ export default function VerseDetails() {
   };
 
   const toggleRead = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    readScale.value = withSequence(
-      withTiming(0.82, { duration: 100 }),
-      withSpring(1, { damping: 6, stiffness: 250 }),
-    );
     try {
       const chapterKey = `read_chapter_${chapterId}`;
       const dailyKey = "daily_read_log";
+      const targetKey = "daily_target";
       const today = new Date().toISOString().split("T")[0];
       const verseKey = `${chapterId}_${currentVerseId}`;
 
@@ -321,7 +730,9 @@ export default function VerseDetails() {
 
       if (readVerses.includes(currentVerseId)) {
         readVerses = readVerses.filter((v) => v !== currentVerseId);
-        dailyLog[today] = dailyLog[today].filter((v: string) => v !== verseKey);
+        dailyLog[today] = dailyLog[today].filter(
+          (v: string) => v !== verseKey,
+        );
         updatedReadState = false;
       } else {
         readVerses.push(currentVerseId);
@@ -331,9 +742,29 @@ export default function VerseDetails() {
         updatedReadState = true;
       }
 
+      // Haptic + celebration animation
+      if (updatedReadState) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        readScale.value = withSequence(
+          withTiming(0.7, { duration: 80 }),
+          withSpring(1.2, { damping: 4, stiffness: 300 }),
+          withSpring(1, { damping: 8, stiffness: 200 }),
+        );
+        readGlow.value = withSequence(
+          withTiming(0.8, { duration: 150 }),
+          withTiming(0, { duration: 500, easing: Easing.out(Easing.cubic) }),
+        );
+        setReadCelebration((c) => c + 1);
+      } else {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        readScale.value = withSequence(
+          withTiming(0.85, { duration: 100 }),
+          withSpring(1, { damping: 6, stiffness: 250 }),
+        );
+      }
+
       setIsRead(updatedReadState);
 
-      // Save in background (no animation happening here)
       await AsyncStorage.setItem(chapterKey, JSON.stringify(readVerses));
       await AsyncStorage.setItem(dailyKey, JSON.stringify(dailyLog));
 
@@ -342,6 +773,20 @@ export default function VerseDetails() {
         await AsyncStorage.setItem(verseReadKey, "true");
       } else {
         await AsyncStorage.removeItem(verseReadKey);
+      }
+
+      // ─── CHECK DAILY GOAL & FIRE NOTIFICATION ─────────────
+      // This runs right here in the verse screen so the user
+      // gets the "Sadhana Complete" notification immediately
+      // when they hit their target — no need to visit daily practice.
+      if (updatedReadState) {
+        const rawTarget = await AsyncStorage.getItem(targetKey);
+        const dailyTarget = rawTarget ? Number(rawTarget) : 3;
+        const todayReadCount = (dailyLog[today] ?? []).length;
+
+        if (todayReadCount >= dailyTarget) {
+          await sendPracticeCompleteNotification();
+        }
       }
     } catch (error) {
       console.log("Error updating read state:", error);
@@ -366,19 +811,19 @@ export default function VerseDetails() {
           },
         ]}
       >
-        {/* Bookmark Ribbon */}
         {isCurrent && isFavorite && (
           <View
             style={[styles.bookmark, { backgroundColor: palette.bookmark }]}
           />
         )}
 
-        {/* Page Corner Fold */}
         <View
-          style={[styles.cornerFold, { borderRightColor: palette.pageBorder }]}
+          style={[
+            styles.cornerFold,
+            { borderRightColor: palette.pageBorder },
+          ]}
         />
 
-        {/* Content */}
         <ScrollView
           style={styles.cardContent}
           showsVerticalScrollIndicator={false}
@@ -466,7 +911,6 @@ export default function VerseDetails() {
       <View style={styles.contentWrapper}>
         {/* Header */}
         <View className="mb-6">
-          {/* Chapter Title */}
           <Text
             className="text-[18px] font-semibold tracking-wide text-center"
             style={{ color: palette.accent }}
@@ -474,7 +918,6 @@ export default function VerseDetails() {
             अध्याय {verse.chapter}
           </Text>
 
-          {/* Verse Counter */}
           <Text
             className="text-[14px] mt-1 text-center"
             style={{ color: palette.muted }}
@@ -482,71 +925,103 @@ export default function VerseDetails() {
             श्लोक {currentVerseId} / {versesCount}
           </Text>
 
-          {/* Action Buttons Row */}
           <View className="flex-row justify-center gap-4 mt-4">
-            {/* Favourite Button */}
-            <Animated.View style={favAnimatedStyle}>
-              <TouchableOpacity
-                onPress={toggleFavorite}
-                activeOpacity={0.9}
-                className={`flex-row items-center px-4 py-2 rounded-full border ${
-                  isFavorite
-                    ? "bg-[#C41E3A]/10 border-[#C41E3A]"
-                    : isDarkMode
-                      ? "border-[#4A4458]"
-                      : "border-[#E8D5C4]"
-                }`}
-              >
-                <Heart
-                  size={18}
-                  strokeWidth={2.2}
-                  color={isFavorite ? "#C41E3A" : palette.muted}
-                  fill={isFavorite ? "#C41E3A" : "transparent"}
-                />
-                <Text
-                  className="ml-2 text-[13px] font-semibold"
-                  style={{
-                    color: isFavorite ? "#C41E3A" : palette.muted,
-                  }}
-                >
-                  {isFavorite ? "Favourited" : "Favourite"}
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
+            {/* ── FAVOURITE BUTTON WITH CELEBRATION ──────── */}
+            <View style={styles.celebrationAnchor}>
+              <CelebrationBurst type="favorite" trigger={favCelebration} />
+              <GlowRing trigger={favCelebration} color="#C41E3A" />
 
-            {/* Mark as Read Button */}
-            <Animated.View style={readAnimatedStyle}>
-              <TouchableOpacity
-                onPress={toggleRead}
-                activeOpacity={0.9}
-                className={`flex-row items-center px-4 py-2 rounded-full border ${
-                  isRead
-                    ? "bg-[#5BB974]/10 border-[#5BB974]"
-                    : isDarkMode
-                      ? "border-[#4A4458]"
-                      : "border-[#E8D5C4]"
-                }`}
-              >
-                {isRead ? (
-                  <CheckSquare size={18} strokeWidth={2.2} color="#5BB974" />
-                ) : (
-                  <Square size={18} strokeWidth={2.2} color={palette.muted} />
-                )}
-
-                <Text
-                  className="ml-2 text-[13px] font-semibold"
-                  style={{
-                    color: isRead ? "#5BB974" : palette.muted,
-                  }}
+              <Animated.View style={favAnimatedStyle}>
+                <TouchableOpacity
+                  onPress={toggleFavorite}
+                  activeOpacity={0.9}
+                  className={`flex-row items-center px-4 py-2 rounded-full border ${
+                    isFavorite
+                      ? "bg-[#C41E3A]/10 border-[#C41E3A]"
+                      : isDarkMode
+                        ? "border-[#4A4458]"
+                        : "border-[#E8D5C4]"
+                  }`}
                 >
-                  {isRead ? "Completed" : "Mark as Read"}
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
+                  <View style={styles.iconWrapper}>
+                    <Animated.View
+                      style={[
+                        styles.iconGlow,
+                        { backgroundColor: "#C41E3A" },
+                        favGlowStyle,
+                      ]}
+                    />
+                    <Heart
+                      size={18}
+                      strokeWidth={2.2}
+                      color={isFavorite ? "#C41E3A" : palette.muted}
+                      fill={isFavorite ? "#C41E3A" : "transparent"}
+                    />
+                  </View>
+                  <Text
+                    className="ml-2 text-[13px] font-semibold"
+                    style={{ color: isFavorite ? "#C41E3A" : palette.muted }}
+                  >
+                    {isFavorite ? "Favourited" : "Favourite"}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+
+            {/* ── MARK AS READ BUTTON WITH CELEBRATION ──── */}
+            <View style={styles.celebrationAnchor}>
+              <CelebrationBurst type="read" trigger={readCelebration} />
+              <GlowRing trigger={readCelebration} color="#5BB974" />
+
+              <Animated.View style={readAnimatedStyle}>
+                <TouchableOpacity
+                  onPress={toggleRead}
+                  activeOpacity={0.9}
+                  className={`flex-row items-center px-4 py-2 rounded-full border ${
+                    isRead
+                      ? "bg-[#5BB974]/10 border-[#5BB974]"
+                      : isDarkMode
+                        ? "border-[#4A4458]"
+                        : "border-[#E8D5C4]"
+                  }`}
+                >
+                  <View style={styles.iconWrapper}>
+                    <Animated.View
+                      style={[
+                        styles.iconGlow,
+                        { backgroundColor: "#5BB974" },
+                        readGlowStyle,
+                      ]}
+                    />
+                    {isRead ? (
+                      <CheckSquare
+                        size={18}
+                        strokeWidth={2.2}
+                        color="#5BB974"
+                      />
+                    ) : (
+                      <Square
+                        size={18}
+                        strokeWidth={2.2}
+                        color={palette.muted}
+                      />
+                    )}
+                  </View>
+                  <Text
+                    className="ml-2 text-[13px] font-semibold"
+                    style={{ color: isRead ? "#5BB974" : palette.muted }}
+                  >
+                    {isRead ? "Completed" : "Mark as Read"}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
           </View>
         </View>
 
-        {/* Pages with gesture */}
+        {/* ═══════════════════════════════════════════════════════
+            PAGE CURL LAYERS
+        ═══════════════════════════════════════════════════════ */}
         <View style={styles.pagesContainer}>
           <PanGestureHandler
             onGestureEvent={onGestureEvent}
@@ -555,83 +1030,191 @@ export default function VerseDetails() {
             failOffsetY={[-15, 15]}
           >
             <Animated.View style={styles.gestureContainer}>
-              {/* Previous page (shown when swiping right) */}
-              {prevVerse && (
-                <Animated.View
-                  style={[
-                    styles.pageWrapper,
-                    styles.underlyingPage,
-                    prevPageAnimatedStyle,
-                  ]}
-                >
-                  {renderVerseCard(prevVerse, currentVerseId - 1)}
-                </Animated.View>
-              )}
-
-              {/* Next page (shown when swiping left) */}
               {nextVerse && (
                 <Animated.View
-                  style={[
-                    styles.pageWrapper,
-                    styles.underlyingPage,
-                    nextPageAnimatedStyle,
-                  ]}
+                  style={[styles.clipLayer, { zIndex: 1 }, nextPageClipStyle]}
                 >
-                  {renderVerseCard(nextVerse, currentVerseId + 1)}
+                  <Animated.View
+                    style={[
+                      styles.innerCard,
+                      { width: CARD_WIDTH },
+                      nextPageInnerStyle,
+                    ]}
+                  >
+                    {renderVerseCard(nextVerse, currentVerseId + 1)}
+                  </Animated.View>
                 </Animated.View>
               )}
 
-              {/* Current page */}
+              {prevVerse && (
+                <Animated.View
+                  style={[styles.clipLayer, { zIndex: 1 }, prevPageClipStyle]}
+                >
+                  <Animated.View
+                    style={[
+                      styles.innerCard,
+                      { width: CARD_WIDTH },
+                      prevPageInnerStyle,
+                    ]}
+                  >
+                    {renderVerseCard(prevVerse, currentVerseId - 1)}
+                  </Animated.View>
+                </Animated.View>
+              )}
+
+              <Animated.View
+                style={[styles.clipLayer, { zIndex: 5 }, currentPageClipStyle]}
+              >
+                <Animated.View
+                  style={[
+                    styles.innerCard,
+                    { width: CARD_WIDTH },
+                    currentPageInnerStyle,
+                  ]}
+                >
+                  {renderVerseCard(verse, currentVerseId, true)}
+                </Animated.View>
+              </Animated.View>
+
+              {/* Fold-back strips */}
               <Animated.View
                 style={[
-                  styles.pageWrapper,
-                  styles.currentPage,
-                  currentPageAnimatedStyle,
+                  styles.foldBack,
+                  { backgroundColor: palette.foldBack, zIndex: 8 },
+                  foldBackRightStyle,
                 ]}
+                pointerEvents="none"
               >
-                {renderVerseCard(verse, currentVerseId, true)}
+                <LinearGradient
+                  colors={
+                    isDarkMode
+                      ? [
+                          "rgba(255,255,255,0.05)",
+                          "rgba(0,0,0,0.06)",
+                          "rgba(0,0,0,0.14)",
+                          "rgba(0,0,0,0.06)",
+                          "rgba(255,255,255,0.04)",
+                        ]
+                      : [
+                          "rgba(255,255,255,0.45)",
+                          "rgba(0,0,0,0.03)",
+                          "rgba(0,0,0,0.07)",
+                          "rgba(0,0,0,0.02)",
+                          "rgba(255,255,255,0.35)",
+                        ]
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              </Animated.View>
 
-                {/* Curl overlay - right side (next page) */}
-                <Animated.View
-                  style={[
-                    styles.curlOverlay,
-                    styles.curlOverlayRight,
-                    {
-                      backgroundColor: palette.curlOverlay,
-                      shadowColor: "#000",
-                    },
-                    curlOverlayRightStyle,
-                  ]}
-                  pointerEvents="none"
-                >
-                  <LinearGradient
-                    colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.45)"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.curlShadowGradientRight}
-                  />
-                </Animated.View>
+              <Animated.View
+                style={[
+                  styles.foldBack,
+                  { backgroundColor: palette.foldBack, zIndex: 8 },
+                  foldBackLeftStyle,
+                ]}
+                pointerEvents="none"
+              >
+                <LinearGradient
+                  colors={
+                    isDarkMode
+                      ? [
+                          "rgba(255,255,255,0.04)",
+                          "rgba(0,0,0,0.06)",
+                          "rgba(0,0,0,0.14)",
+                          "rgba(0,0,0,0.06)",
+                          "rgba(255,255,255,0.05)",
+                        ]
+                      : [
+                          "rgba(255,255,255,0.35)",
+                          "rgba(0,0,0,0.02)",
+                          "rgba(0,0,0,0.07)",
+                          "rgba(0,0,0,0.03)",
+                          "rgba(255,255,255,0.45)",
+                        ]
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              </Animated.View>
 
-                {/* Curl overlay - left side (prev page) */}
-                <Animated.View
-                  style={[
-                    styles.curlOverlay,
-                    styles.curlOverlayLeft,
-                    {
-                      backgroundColor: palette.curlOverlay,
-                      shadowColor: "#000",
-                    },
-                    curlOverlayLeftStyle,
+              {/* Shadows */}
+              <Animated.View
+                style={[styles.foldShadow, { zIndex: 9 }, shadowRightStyle]}
+                pointerEvents="none"
+              >
+                <LinearGradient
+                  colors={[
+                    "rgba(0,0,0,0)",
+                    "rgba(0,0,0,0.05)",
+                    "rgba(0,0,0,0.15)",
+                    "rgba(0,0,0,0.32)",
                   ]}
-                  pointerEvents="none"
-                >
-                  <LinearGradient
-                    colors={["rgba(0,0,0,0.45)", "rgba(0,0,0,0)"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.curlShadowGradientLeft}
-                  />
-                </Animated.View>
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              </Animated.View>
+
+              <Animated.View
+                style={[styles.foldShadow, { zIndex: 9 }, shadowLeftStyle]}
+                pointerEvents="none"
+              >
+                <LinearGradient
+                  colors={[
+                    "rgba(0,0,0,0.32)",
+                    "rgba(0,0,0,0.15)",
+                    "rgba(0,0,0,0.05)",
+                    "rgba(0,0,0,0)",
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              </Animated.View>
+
+              {/* Highlights */}
+              <Animated.View
+                style={[
+                  styles.foldHighlight,
+                  { zIndex: 10 },
+                  highlightRightStyle,
+                ]}
+                pointerEvents="none"
+              >
+                <LinearGradient
+                  colors={
+                    isDarkMode
+                      ? ["rgba(255,255,255,0.18)", "rgba(255,255,255,0.03)"]
+                      : ["rgba(255,255,255,0.95)", "rgba(255,255,255,0.15)"]
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              </Animated.View>
+
+              <Animated.View
+                style={[
+                  styles.foldHighlight,
+                  { zIndex: 10 },
+                  highlightLeftStyle,
+                ]}
+                pointerEvents="none"
+              >
+                <LinearGradient
+                  colors={
+                    isDarkMode
+                      ? ["rgba(255,255,255,0.03)", "rgba(255,255,255,0.18)"]
+                      : ["rgba(255,255,255,0.15)", "rgba(255,255,255,0.95)"]
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
               </Animated.View>
             </Animated.View>
           </PanGestureHandler>
@@ -652,7 +1235,7 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: CARD_HORIZONTAL_PADDING,
     paddingTop: 16,
     paddingBottom: 90,
   },
@@ -663,14 +1246,16 @@ const styles = StyleSheet.create({
     flex: 1,
     position: "relative",
   },
-  pageWrapper: {
-    ...StyleSheet.absoluteFillObject,
+  clipLayer: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    overflow: "hidden",
   },
-  currentPage: {
-    zIndex: 10,
-  },
-  underlyingPage: {
-    zIndex: 5,
+  innerCard: {
+    position: "absolute",
+    top: 0,
+    height: "100%",
   },
   pageContainer: {
     flex: 1,
@@ -771,38 +1356,59 @@ const styles = StyleSheet.create({
     height: 2,
     borderRadius: 1,
   },
-  // Page curl styles
-  curlOverlay: {
+  foldBack: {
     position: "absolute",
     top: 0,
     bottom: 0,
-    shadowOffset: { width: 8, height: 0 },
-    shadowRadius: 12,
-    elevation: 8,
-    overflow: "hidden",
+    borderRadius: 1,
   },
-  curlOverlayRight: {
-    right: 0,
-    borderTopRightRadius: 12,
-    borderBottomRightRadius: 12,
-  },
-  curlOverlayLeft: {
-    left: 0,
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
-  },
-  curlShadowGradientRight: {
+  foldShadow: {
     position: "absolute",
-    right: 0,
     top: 0,
     bottom: 0,
+  },
+  foldHighlight: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    width: HIGHLIGHT_WIDTH,
+  },
+
+  // ─── CELEBRATION STYLES ──────────────────────────────────────
+  celebrationAnchor: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  burstContainer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 100,
+  },
+  particle: {
+    position: "absolute",
+  },
+  particleEmoji: {
+    fontSize: 20,
+  },
+  iconWrapper: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconGlow: {
+    position: "absolute",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  glowRing: {
+    position: "absolute",
     width: 40,
-  },
-  curlShadowGradientLeft: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    zIndex: 99,
   },
 });

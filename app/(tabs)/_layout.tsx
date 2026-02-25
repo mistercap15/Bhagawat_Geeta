@@ -11,7 +11,7 @@ import {
   SafeAreaProvider,
 } from "react-native-safe-area-context";
 import { initializeDailyReminder } from "@/utils/notifications";
-
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 // Fix: shouldPlaySound must be true
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -26,7 +26,9 @@ export default function Layout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
+           <BottomSheetModalProvider>
           <LayoutContent />
+          </BottomSheetModalProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
