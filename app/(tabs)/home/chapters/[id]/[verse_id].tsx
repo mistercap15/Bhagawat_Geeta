@@ -33,6 +33,7 @@ import * as Haptics from "expo-haptics";
 import { PanGestureHandler } from "react-native-gesture-handler";
 import { getSlok } from "@/utils/gitaData";
 import { useTheme } from "@/context/ThemeContext";
+import { useTranslation } from "@/utils/translations";
 import MaterialLoader from "@/components/MaterialLoader";
 import { sendPracticeCompleteNotification } from "@/utils/notifications";
 
@@ -286,6 +287,7 @@ export default function VerseDetails() {
 
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
+  const t = useTranslation();
 
   const [verse, setVerse] = useState<any>(null);
   const [nextVerse, setNextVerse] = useState<any>(null);
@@ -837,7 +839,7 @@ export default function VerseDetails() {
                 style={[styles.dot, { backgroundColor: palette.accentLight }]}
               />
               <Text style={[styles.sectionTitle, { color: palette.accent }]}>
-                संस्कृत श्लोक
+                {t.sanskritHeader}
               </Text>
               <View
                 style={[styles.dot, { backgroundColor: palette.accentLight }]}
@@ -860,7 +862,7 @@ export default function VerseDetails() {
             ]}
           >
             <Text style={[styles.meaningTitle, { color: palette.accent }]}>
-              ॐ हिंदी भावार्थ ॐ
+              {t.hindiMeaning}
             </Text>
             <Text style={[styles.meaningText, { color: palette.text }]}>
               {verseData.tej.ht}
@@ -876,7 +878,7 @@ export default function VerseDetails() {
             ]}
           >
             <Text style={[styles.meaningTitle, { color: palette.accent }]}>
-              ॐ English Translation ॐ
+              {t.englishTranslation}
             </Text>
             <Text style={[styles.meaningText, { color: palette.text }]}>
               {verseData.siva.et}
@@ -915,14 +917,14 @@ export default function VerseDetails() {
             className="text-[18px] font-semibold tracking-wide text-center"
             style={{ color: palette.accent }}
           >
-            अध्याय {verse.chapter}
+            {t.chapter} {verse.chapter}
           </Text>
 
           <Text
             className="text-[14px] mt-1 text-center"
             style={{ color: palette.muted }}
           >
-            श्लोक {currentVerseId} / {versesCount}
+            {t.verse} {currentVerseId} / {versesCount}
           </Text>
 
           <View className="flex-row justify-center gap-4 mt-4">
@@ -962,7 +964,7 @@ export default function VerseDetails() {
                     className="ml-2 text-[13px] font-semibold"
                     style={{ color: isFavorite ? "#C41E3A" : palette.muted }}
                   >
-                    {isFavorite ? "Favourited" : "Favourite"}
+                    {isFavorite ? t.favourited : t.favourite}
                   </Text>
                 </TouchableOpacity>
               </Animated.View>
@@ -1011,7 +1013,7 @@ export default function VerseDetails() {
                     className="ml-2 text-[13px] font-semibold"
                     style={{ color: isRead ? "#5BB974" : palette.muted }}
                   >
-                    {isRead ? "Completed" : "Mark as Read"}
+                    {isRead ? t.completed : t.markAsRead}
                   </Text>
                 </TouchableOpacity>
               </Animated.View>

@@ -1,11 +1,14 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Linking, ScrollView, StyleSheet } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
+import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
 import { Mail, MessageCircle } from "lucide-react-native";
 
 const ContactSupport = () => {
   const { isDarkMode } = useTheme();
+  const t = useTranslation();
+  const isHindi = t.meaningKey === "hi";
 
   const c = {
     text: isDarkMode ? "#E8DEF8" : "#3E2723",
@@ -28,9 +31,13 @@ const ContactSupport = () => {
           <View style={[styles.heroIcon, { backgroundColor: "#E67E2220" }]}>
             <MessageCircle size={36} color="#E67E22" />
           </View>
-          <Text style={[styles.heroTitle, { color: c.text }]}>Contact Support</Text>
+          <Text style={[styles.heroTitle, { color: c.text }]}>
+            {isHindi ? "सहायता से संपर्क करें" : "Contact Support"}
+          </Text>
           <Text style={[styles.heroSub, { color: c.sub }]}>
-            Questions, suggestions, or bug reports?{"\n"}I read every message.
+            {isHindi
+              ? "प्रश्न, सुझाव, या बग रिपोर्ट?" + "\n" + "मैं हर संदेश पढ़ता हूँ।"
+              : "Questions, suggestions, or bug reports?" + "\n" + "I read every message."}
           </Text>
         </View>
 
@@ -38,7 +45,7 @@ const ContactSupport = () => {
         <View style={[styles.emailCard, { backgroundColor: c.card, borderColor: c.border }]}>
           <View style={styles.emailCardRow}>
             <Mail size={16} color="#E67E22" />
-            <Text style={[styles.emailLabel, { color: c.text }]}>Email</Text>
+            <Text style={[styles.emailLabel, { color: c.text }]}>{isHindi ? "ईमेल" : "Email"}</Text>
           </View>
           <Text style={[styles.emailAddress, { color: c.sub }]}>
             khilanpatel15@gmail.com
@@ -58,7 +65,7 @@ const ContactSupport = () => {
             style={styles.ctaBtn}
           >
             <Mail size={18} color="#fff" />
-            <Text style={styles.ctaBtnText}>Send Email</Text>
+            <Text style={styles.ctaBtnText}>{isHindi ? "ईमेल भेजें" : "Send Email"}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>

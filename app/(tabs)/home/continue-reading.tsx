@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-nati
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
+import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
 import { BookOpen, ChevronRight, Clock, BookMarked } from "lucide-react-native";
 import MaterialLoader from "@/components/MaterialLoader";
@@ -27,6 +28,7 @@ export default function ContinueReadingScreen() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { isDarkMode } = useTheme();
+  const t = useTranslation();
 
   const c = {
     text: isDarkMode ? "#E8DEF8" : "#3E2723",
@@ -82,7 +84,7 @@ export default function ContinueReadingScreen() {
           <View style={[styles.headerIconWrap, { backgroundColor: "#3B82F620" }]}>
             <BookMarked size={18} color="#3B82F6" />
           </View>
-          <Text style={[styles.pageTitle, { color: c.text }]}>Continue Reading</Text>
+          <Text style={[styles.pageTitle, { color: c.text }]}>{t.continueReadingTitle}</Text>
         </View>
 
         <View style={[styles.divider, { backgroundColor: c.border }]} />
@@ -92,16 +94,16 @@ export default function ContinueReadingScreen() {
             <View style={[styles.emptyIcon, { backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6" }]}>
               <BookOpen size={38} color={isDarkMode ? "#D0BCFF" : "#8A4D24"} />
             </View>
-            <Text style={[styles.emptyTitle, { color: c.text }]}>No Reading History</Text>
+            <Text style={[styles.emptyTitle, { color: c.text }]}>{t.noReadingHistory}</Text>
             <Text style={[styles.emptySub, { color: c.sub }]}>
-              Open any verse to start tracking your progress here 🙏
+              {t.noReadingHistorySub}
             </Text>
             <TouchableOpacity
               onPress={() => router.push("/(tabs)/home/chapters")}
               activeOpacity={0.8}
               style={styles.browseBtn}
             >
-              <Text style={styles.browseBtnText}>Browse Chapters</Text>
+              <Text style={styles.browseBtnText}>{t.browseChapters}</Text>
             </TouchableOpacity>
           </Animated.View>
         ) : (
@@ -138,7 +140,7 @@ export default function ContinueReadingScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.chapterNumLabel}>
-                      CHAPTER {lastRead.chapter}
+                      {t.meaningKey === 'en' ? 'CHAPTER' : 'अध्याय'} {lastRead.chapter}
                     </Text>
                     <Text
                       style={[styles.chapterNameText, { color: c.text }]}
@@ -153,9 +155,9 @@ export default function ContinueReadingScreen() {
                 {/* Resume info pill */}
                 <View style={[styles.resumePill, { backgroundColor: isDarkMode ? "#3A3444" : "#FFF8F1" }]}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.resumeLabel, { color: c.sub }]}>Resume from</Text>
+                    <Text style={[styles.resumeLabel, { color: c.sub }]}>{t.resumeFrom}</Text>
                     <Text style={[styles.resumeVerse, { color: c.text }]}>
-                      Verse {lastRead.verse}
+                      {t.verse} {lastRead.verse}
                     </Text>
                   </View>
                   <View style={styles.timeRow}>
@@ -169,7 +171,7 @@ export default function ContinueReadingScreen() {
             </TouchableOpacity>
 
             <Text style={[styles.hintText, { color: c.sub }]}>
-              Swipe left or right on any verse to navigate between them
+              {t.swipeHint}
             </Text>
           </Animated.View>
         )}

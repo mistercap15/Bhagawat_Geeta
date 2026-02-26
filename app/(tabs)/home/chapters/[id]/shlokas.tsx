@@ -4,6 +4,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { getChapter } from "@/utils/gitaData";
 import { useTheme } from "@/context/ThemeContext";
+import { useTranslation } from "@/utils/translations";
 import MaterialLoader from "@/components/MaterialLoader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CheckCircle, ChevronRight } from "lucide-react-native";
@@ -18,6 +19,7 @@ export default function ShlokasScreen() {
   const [error, setError] = useState(false);
   const router = useRouter();
   const { isDarkMode } = useTheme();
+  const t = useTranslation();
 
   const c = {
     text: isDarkMode ? "#E8DEF8" : "#3E2723",
@@ -61,7 +63,7 @@ export default function ShlokasScreen() {
       >
         <MaterialLoader size="large" />
         <Text style={[styles.loadingText, { color: c.sub }]}>
-          {error ? "Could not load chapter." : "Loading…"}
+          {error ? t.couldNotLoad : t.loading}
         </Text>
       </LinearGradient>
     );
@@ -87,15 +89,15 @@ export default function ShlokasScreen() {
           colors={isDarkMode ? ["#2B2930", "#352F3F"] : ["#FFF1E6", "#FFEAD7"]}
           style={[styles.headerCard, { borderColor: c.border }]}
         >
-          <Text style={styles.chapterLabel}>CHAPTER {chapter.chapter_number}</Text>
+          <Text style={styles.chapterLabel}>{t.meaningKey === 'en' ? 'CHAPTER' : 'अध्याय'} {chapter.chapter_number}</Text>
           <Text style={[styles.chapterTitle, { color: c.text }]}>
-            {chapter.transliteration}
+            {chapter.name}
           </Text>
           <Text style={[styles.chapterMeaning, { color: c.sub }]}>
-            "{chapter.meaning.en}"
+            {chapter.transliteration}
           </Text>
           <Text style={[styles.chapterSummary, { color: c.sub }]} numberOfLines={3}>
-            {chapter.summary.en}
+            {chapter.summary[t.meaningKey]}
           </Text>
 
           {/* Progress bar */}
@@ -116,7 +118,7 @@ export default function ShlokasScreen() {
 
         {/* Verse list */}
         <Text style={[styles.sectionLabel, { color: c.text }]}>
-          {chapter.verses_count} Verses
+          {chapter.verses_count} {t.versesCount}
         </Text>
 
         {verses.map((verse, index) => {
@@ -166,10 +168,10 @@ export default function ShlokasScreen() {
 
                 <View style={styles.verseBody}>
                   <Text style={[styles.verseTitle, { color: c.text }]}>
-                    Verse {verse.verse_number}
+                    {t.verse} {verse.verse_number}
                   </Text>
                   <Text style={[styles.verseSub, { color: c.sub }]}>
-                    {isRead ? "Completed" : "Tap to read"}
+                    {isRead ? t.completed : t.tapToRead}
                   </Text>
                 </View>
 

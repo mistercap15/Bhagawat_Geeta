@@ -10,6 +10,7 @@ import {
   Image,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
+import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
 import { Code2, Heart, Download, IndianRupee, X } from "lucide-react-native";
 import {
@@ -30,7 +31,9 @@ const QR_SIZE = SCREEN_WIDTH * 0.6;
 const TAB_BAR_HEIGHT = 62;
 const About = () => {
   const { isDarkMode } = useTheme();
+  const t = useTranslation();
   const insets = useSafeAreaInsets();
+  const isHindi = t.meaningKey === "hi";
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
   const c = {
@@ -69,8 +72,8 @@ const About = () => {
       if (status !== "granted") {
         Toast.show({
           type: "error",
-          text1: "Permission Denied",
-          text2: "Please allow access to save images",
+          text1: isHindi ? "अनुमति अस्वीकृत" : "Permission Denied",
+          text2: isHindi ? "छवियाँ सहेजने के लिए पहुँच की अनुमति दें" : "Please allow access to save images",
         });
         return;
       }
@@ -90,15 +93,15 @@ const About = () => {
 
       Toast.show({
         type: "success",
-        text1: "QR Code Saved!",
-        text2: "Saved to your photo gallery 📸",
+        text1: isHindi ? "QR कोड सहेजा गया!" : "QR Code Saved!",
+        text2: isHindi ? "आपकी फ़ोटो गैलरी में सहेजा गया 📸" : "Saved to your photo gallery 📸",
       });
     } catch (err) {
       console.error("Save QR error:", err);
       Toast.show({
         type: "error",
-        text1: "Could not save QR code",
-        text2: "Please try again",
+        text1: isHindi ? "QR कोड सहेजा नहीं जा सका" : "Could not save QR code",
+        text2: isHindi ? "कृपया पुनः प्रयास करें" : "Please try again",
       });
     }
   };
@@ -125,7 +128,7 @@ const About = () => {
           </LinearGradient>
           <Text style={[styles.devName, { color: c.text }]}>Khilan Patel</Text>
           <Text style={[styles.devRole, { color: c.sub }]}>
-            Full Stack Developer
+            {isHindi ? "फुल स्टैक डेवलपर" : "Full Stack Developer"}
           </Text>
         </View>
 
@@ -139,13 +142,13 @@ const About = () => {
           <View style={styles.cardHeader}>
             <Heart size={16} color="#C41E3A" fill="#C41E3A" />
             <Text style={[styles.cardTitle, { color: c.text }]}>
-              About the App
+              {isHindi ? "ऐप के बारे में" : "About the App"}
             </Text>
           </View>
           <Text style={[styles.cardBody, { color: c.sub }]}>
-            I built this Bhagavad Gita app to bring the eternal wisdom of the
-            Gita to more people — completely free and ad-free, for a peaceful,
-            distraction-free spiritual experience.
+            {isHindi
+              ? "मैंने यह भगवद् गीता ऐप गीता के शाश्वत ज्ञान को अधिक से अधिक लोगों तक पहुँचाने के लिए बनाया है — पूरी तरह मुफ़्त और विज्ञापन-मुक्त, एक शांतिपूर्ण और ध्यानपूर्ण आध्यात्मिक अनुभव के लिए।"
+              : "I built this Bhagavad Gita app to bring the eternal wisdom of the Gita to more people — completely free and ad-free, for a peaceful, distraction-free spiritual experience."}
           </Text>
         </View>
 
@@ -159,7 +162,7 @@ const About = () => {
           <View style={styles.cardHeader}>
             <Code2 size={16} color="#3B82F6" />
             <Text style={[styles.cardTitle, { color: c.text }]}>
-              Built With
+              {isHindi ? "तकनीक" : "Built With"}
             </Text>
           </View>
           {[
@@ -189,12 +192,12 @@ const About = () => {
             style={styles.ctaBtn}
           >
             <IndianRupee size={18} color="#fff" />
-            <Text style={styles.ctaBtnText}>Support via UPI</Text>
+            <Text style={styles.ctaBtnText}>{isHindi ? "UPI से सहयोग करें" : "Support via UPI"}</Text>
           </LinearGradient>
         </TouchableOpacity>
 
         <Text style={[styles.ctaHint, { color: c.sub }]}>
-          Your support keeps this app free & ad-free 🙏
+          {isHindi ? "आपका सहयोग इस ऐप को मुफ़्त और विज्ञापन-मुक्त रखता है 🙏" : "Your support keeps this app free & ad-free 🙏"}
         </Text>
       </ScrollView>
 
@@ -229,10 +232,10 @@ const About = () => {
 
           {/* Title */}
           <Text style={[styles.sheetTitle, { color: c.text }]}>
-            Support This App
+            {isHindi ? "इस ऐप को सहयोग करें" : "Support This App"}
           </Text>
           <Text style={[styles.sheetSub, { color: c.sub }]}>
-            Scan the QR code with any UPI app to donate
+            {isHindi ? "दान करने के लिए किसी भी UPI ऐप से QR कोड स्कैन करें" : "Scan the QR code with any UPI app to donate"}
           </Text>
 
           {/* QR Code Image */}
@@ -266,13 +269,13 @@ const About = () => {
                 { color: isDarkMode ? "#FFB59D" : "#8A4D24" },
               ]}
             >
-              Save QR to Gallery
+              {isHindi ? "QR गैलरी में सेव करें" : "Save QR to Gallery"}
             </Text>
           </TouchableOpacity>
 
           {/* Footer */}
           <Text style={[styles.sheetFooter, { color: c.sub }]}>
-            Every contribution helps keep the Gita free for everyone 🙏
+            {isHindi ? "प्रत्येक योगदान गीता को सबके लिए मुफ़्त रखने में मदद करता है 🙏" : "Every contribution helps keep the Gita free for everyone 🙏"}
           </Text>
         </BottomSheetView>
       </BottomSheetModal>

@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  Platform,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
+import { useTranslation } from "@/utils/translations";
 import {
   Share2,
   BookOpen,
@@ -29,18 +29,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import MaterialLoader from "@/components/MaterialLoader";
 import homeLogo from "../../../assets/images/splashScreen.png";
 
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Good Morning";
-  if (h < 17) return "Good Afternoon";
-  return "Good Evening";
-}
-
-const NAV_ITEMS = [
+const NAV_ITEM_CONFIGS = [
   {
     icon: BookOpen,
-    label: "Read Chapters",
-    sub: "Explore all 18 chapters",
+    labelKey: "readChapters" as const,
+    subKey: "readChaptersSub" as const,
     route: "/(tabs)/home/chapters",
     color: "#E8913A",
     bg: "#FFF1E6",
@@ -48,8 +41,8 @@ const NAV_ITEMS = [
   },
   {
     icon: Star,
-    label: "Favorites",
-    sub: "Your saved verses",
+    labelKey: "favorites" as const,
+    subKey: "favoritesSub" as const,
     route: "/(tabs)/home/favorite",
     color: "#D97706",
     bg: "#FFFBEB",
@@ -57,8 +50,8 @@ const NAV_ITEMS = [
   },
   {
     icon: Sparkles,
-    label: "Continue Reading",
-    sub: "Resume where you left",
+    labelKey: "continueReading" as const,
+    subKey: "continueReadingSub" as const,
     route: "/(tabs)/home/continue-reading",
     color: "#3B82F6",
     bg: "#EFF6FF",
@@ -66,8 +59,8 @@ const NAV_ITEMS = [
   },
   {
     icon: Target,
-    label: "Daily Practice",
-    sub: "Build your streak",
+    labelKey: "dailyPractice" as const,
+    subKey: "dailyPracticeSub" as const,
     route: "/(tabs)/home/daily-practice",
     color: "#22C55E",
     bg: "#F0FDF4",
@@ -82,7 +75,15 @@ export default function HomeScreen() {
   const [error, setError] = useState(false);
   const router = useRouter();
   const { isDarkMode } = useTheme();
+  const t = useTranslation();
   const viewRef = useRef<View>(null);
+
+  function getGreeting(): string {
+    const h = new Date().getHours();
+    if (h < 12) return t.greetingMorning;
+    if (h < 17) return t.greetingAfternoon;
+    return t.greetingEvening;
+  }
 
   const c = {
     bg: isDarkMode ? "#1C1B1F" : "#FFF8F1",
@@ -234,10 +235,10 @@ export default function HomeScreen() {
             {getGreeting().toUpperCase()}
           </Text>
           <Text style={[styles.appTitle, { color: c.text }]}>
-            Bhagavad Gita
+            {t.appTitle}
           </Text>
           <Text style={[styles.appTagline, { color: c.sub }]}>
-            Sacred wisdom, beautifully presented
+            {t.appTagline}
           </Text>
         </Animated.View>
 
@@ -276,7 +277,7 @@ export default function HomeScreen() {
                     color={isDarkMode ? "#D0BCFF" : "#7D5260"}
                   />
                   <Text style={[styles.shlokaTitle, { color: c.text }]}>
-                    Shloka of the Day
+                    {t.shlokaOfTheDay}
                   </Text>
                 </View>
                 {shlokaOfTheDay && (
@@ -303,13 +304,13 @@ export default function HomeScreen() {
                 </View>
               ) : error ? (
                 <Text style={[styles.errorText, { color: c.sub }]}>
-                  Pull down to refresh and load a verse.
+                  {t.pullToRefresh}
                 </Text>
               ) : shlokaOfTheDay ? (
                 <View>
                   <View style={styles.verseAccentLine}>
                     <Text style={[styles.verseRef, { color: c.sub }]}>
-                      Chapter {shlokaOfTheDay.chapter} · Verse{" "}
+                      {t.chapter} {shlokaOfTheDay.chapter} · {t.verse}{" "}
                       {shlokaOfTheDay.verse}
                     </Text>
                     <Text style={[styles.shlokText, { color: c.text }]}>
@@ -334,7 +335,7 @@ export default function HomeScreen() {
                     >
                       <Share2 size={14} color={c.accent} />
                       <Text style={[styles.shareBtnText, { color: c.accent }]}>
-                        Share Verse
+                        {t.shareVerse}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -350,15 +351,15 @@ export default function HomeScreen() {
           style={styles.navSection}
         >
           <Text style={[styles.navSectionTitle, { color: c.text }]}>
-            Begin Your Journey
+            {t.beginJourney}
           </Text>
           <View style={styles.navGrid}>
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEM_CONFIGS.map((item) => {
               const Icon = item.icon;
               const iconBg = isDarkMode ? item.bgDark : item.bg;
               return (
                 <TouchableOpacity
-                  key={item.label}
+                  key={item.labelKey}
                   activeOpacity={0.8}
                   onPress={() => router.push(item.route as any)}
                   style={[
@@ -376,10 +377,10 @@ export default function HomeScreen() {
                     <Icon size={22} color={item.color} />
                   </View>
                   <Text style={[styles.navLabel, { color: c.text }]}>
-                    {item.label}
+                    {t[item.labelKey]}
                   </Text>
                   <Text style={[styles.navSub, { color: c.sub }]}>
-                    {item.sub}
+                    {t[item.subKey]}
                   </Text>
                   <ChevronRight
                     size={14}

@@ -11,6 +11,7 @@ import {
   LayoutChangeEvent,
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
+import { useTranslation } from "@/utils/translations";
 import {
   Flame,
   Target,
@@ -52,10 +53,10 @@ function getDateKey(daysAgo: number): string {
   return d.toISOString().split("T")[0];
 }
 
-function getShortDay(daysAgo: number): string {
+function getShortDay(daysAgo: number, locale: string): string {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
-  return d.toLocaleDateString("en-US", { weekday: "short" }).slice(0, 2);
+  return d.toLocaleDateString(locale, { weekday: "short" }).slice(0, 2);
 }
 
 // ── Circular progress ring ────────────────────────────────────────────────────
@@ -171,11 +172,13 @@ function TargetSlider({
   onChange,
   isDarkMode,
   palette,
+  versePerDayLabel,
 }: {
   value: number;
   onChange: (v: number) => void;
   isDarkMode: boolean;
   palette: any;
+  versePerDayLabel: string;
 }) {
   const [trackWidth, setTrackWidth] = useState(0);
   const lastHapticValue = useRef(value);
@@ -307,7 +310,7 @@ function TargetSlider({
             {value}
           </Text>
           <Text style={[sliderStyles.valueLabel, { color: palette.sub }]}>
-            verse{value !== 1 ? "s" : ""} / day
+            {versePerDayLabel}
           </Text>
         </View>
 
@@ -551,6 +554,7 @@ const sliderStyles = StyleSheet.create({
 
 export default function DailyPracticeScreen() {
   const { isDarkMode } = useTheme();
+  const t = useTranslation();
   const [todayCount, setTodayCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [target, setTarget] = useState(DEFAULT_TARGET);
@@ -603,13 +607,13 @@ export default function DailyPracticeScreen() {
     const history = Array.from({ length: 7 }, (_, i) => {
       const key = getDateKey(6 - i);
       const reads = (log[key] ?? []).length;
-      return { day: getShortDay(6 - i), met: reads >= tgt, count: reads };
+      return { day: getShortDay(6 - i, t.dateLocale), met: reads >= tgt, count: reads };
     });
     setWeekHistory(history);
 
     // NOTE: Goal completion notification now triggers from verse_details.tsx
     // when user marks a verse as read — no longer from this screen.
-  }, []);
+  }, [t.dateLocale]);
 
   useFocusEffect(
     useCallback(() => {
@@ -642,10 +646,10 @@ export default function DailyPracticeScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: p.text }]}>
-              Daily Practice
+              {t.dailyPracticeTitle}
             </Text>
             <Text style={[styles.pageSubtitle, { color: p.sub }]}>
-              Set your goal and build a streak
+              {t.dailyPracticeSubtitle}
             </Text>
           </View>
         </View>
@@ -661,7 +665,7 @@ export default function DailyPracticeScreen() {
           ]}
         >
           <Text style={[styles.cardLabel, { color: p.text }]}>
-            Today's Progress
+            {t.todaysProgress}
           </Text>
 
           <View style={styles.progressRow}>
@@ -685,7 +689,7 @@ export default function DailyPracticeScreen() {
                   {streak}
                 </Text>
                 <Text style={[styles.statPillLabel, { color: p.sub }]}>
-                  day streak
+                  {t.dayStreak}
                 </Text>
               </View>
 
@@ -712,7 +716,7 @@ export default function DailyPracticeScreen() {
                   {todayCount}/{target}
                 </Text>
                 <Text style={[styles.statPillLabel, { color: p.sub }]}>
-                  verses
+                  {t.versesLabel}
                 </Text>
               </View>
 
@@ -733,7 +737,7 @@ export default function DailyPracticeScreen() {
             >
               <Trophy size={16} color="#22C55E" />
               <Text style={styles.completeBannerText}>
-                Daily mission complete — beautiful consistency!
+                {t.dailyMissionComplete}
               </Text>
             </View>
           )}
@@ -748,10 +752,10 @@ export default function DailyPracticeScreen() {
         >
           <View style={styles.cardHeaderRow}>
             <Text style={[styles.cardLabel, { color: p.text }]}>
-              This Week
+              {t.thisWeek}
             </Text>
             <Text style={[styles.cardHint, { color: p.sub }]}>
-              {weekHistory.filter((d) => d.met).length}/7 days met
+              {t.daysMetLabel(weekHistory.filter((d) => d.met).length)}
             </Text>
           </View>
           <View style={styles.weekRow}>
@@ -807,10 +811,10 @@ export default function DailyPracticeScreen() {
               </View>
               <View>
                 <Text style={[styles.cardLabel, { color: p.text }]}>
-                  Daily Target
+                  {t.dailyTarget}
                 </Text>
                 <Text style={[styles.cardHint, { color: p.sub }]}>
-                  Slide or tap to set your goal
+                  {t.slideToSetGoal}
                 </Text>
               </View>
             </View>
@@ -821,12 +825,13 @@ export default function DailyPracticeScreen() {
             onChange={updateTarget}
             isDarkMode={isDarkMode}
             palette={p}
+            versePerDayLabel={t.versePerDay(target)}
           />
         </View>
 
         {/* ── Motivational note ── */}
         <Text style={[styles.motiveLine, { color: p.sub }]}>
-          "Small daily improvements lead to stunning long-term results."
+          {t.motivationalQuote}
         </Text>
       </ScrollView>
     </LinearGradient>

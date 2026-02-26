@@ -1,6 +1,8 @@
 import { Tabs } from "expo-router";
 import { HomeIcon, SearchIcon } from "lucide-react-native";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
+import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
+import { useTranslation } from "@/utils/translations";
 import ThemedLayout from "@/components/ThemedLayout";
 import Toast from "react-native-toast-message";
 import { useEffect } from "react";
@@ -26,9 +28,11 @@ export default function Layout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-           <BottomSheetModalProvider>
-          <LayoutContent />
-          </BottomSheetModalProvider>
+          <LanguageProvider>
+            <BottomSheetModalProvider>
+              <LayoutContent />
+            </BottomSheetModalProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -37,6 +41,7 @@ export default function Layout() {
 
 function LayoutContent() {
   const { isDarkMode } = useTheme();
+  const t = useTranslation();
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -84,14 +89,14 @@ function LayoutContent() {
           <Tabs.Screen
             name="home"
             options={{
-              title: "Home",
+              title: t.tabHome,
               tabBarIcon: ({ color }) => <HomeIcon color={color} size={20} />,
             }}
           />
           <Tabs.Screen
             name="explore"
             options={{
-              title: "Explore",
+              title: t.tabExplore,
               tabBarIcon: ({ color }) => <SearchIcon color={color} size={20} />,
             }}
           />

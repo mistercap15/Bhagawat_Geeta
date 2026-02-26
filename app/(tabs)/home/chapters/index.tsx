@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { getChapters } from "@/utils/gitaData";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "@/context/ThemeContext";
+import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialLoader from "@/components/MaterialLoader";
 import { ChevronRight } from "lucide-react-native";
@@ -22,6 +23,7 @@ export default function ChaptersScreen() {
   const [chapters, setChapters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { isDarkMode } = useTheme();
+  const t = useTranslation();
 
   const c = {
     text: isDarkMode ? "#E8DEF8" : "#3E2723",
@@ -60,7 +62,7 @@ export default function ChaptersScreen() {
         style={styles.center}
       >
         <MaterialLoader size="large" />
-        <Text style={[styles.loadingText, { color: c.sub }]}>Loading chapters…</Text>
+        <Text style={[styles.loadingText, { color: c.sub }]}>{t.loadingChapters}</Text>
       </LinearGradient>
     );
   }
@@ -81,9 +83,9 @@ export default function ChaptersScreen() {
       >
         {/* Page header */}
         <View style={styles.pageHeader}>
-          <Text style={[styles.pageTitle, { color: c.text }]}>All Chapters</Text>
+          <Text style={[styles.pageTitle, { color: c.text }]}>{t.allChapters}</Text>
           <Text style={[styles.pageSub, { color: c.sub }]}>
-            18 chapters · {totalRead} verses read
+            {t.chaptersSubHeader(totalRead)}
           </Text>
         </View>
 
@@ -129,7 +131,7 @@ export default function ChaptersScreen() {
                       style={[styles.transliteration, { color: c.text }]}
                       numberOfLines={1}
                     >
-                      {chapter.transliteration}
+                      {chapter.name}
                     </Text>
                     <View style={styles.cardTopRight}>
                       {pct > 0 && (
@@ -157,7 +159,7 @@ export default function ChaptersScreen() {
                   </View>
 
                   <Text style={[styles.chapterMeta, { color: c.sub }]} numberOfLines={1}>
-                    {chapter.meaning.en} · {chapter.verses_count} verses
+                    {chapter.transliteration} · {chapter.verses_count} {t.versesCount}
                   </Text>
 
                   {/* Progress bar */}

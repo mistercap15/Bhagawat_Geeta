@@ -1,19 +1,31 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Linking, ScrollView, StyleSheet } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
+import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
 import { Star, CheckCircle } from "lucide-react-native";
 
-const FEATURES = [
-  "Free & ad-free forever",
-  "Daily reading reminders at 7:30 AM",
-  "Offline access to all 700 verses",
-  "Favorites & reading progress tracking",
-  "Dark mode support",
-];
+const FEATURES = {
+  en: [
+    "Free & ad-free forever",
+    "Daily reading reminders at 7:30 AM",
+    "Offline access to all 700 verses",
+    "Favorites & reading progress tracking",
+    "Dark mode support",
+  ],
+  hi: [
+    "हमेशा के लिए मुफ़्त और विज्ञापन-मुक्त",
+    "प्रतिदिन सुबह 7:30 बजे पढ़ाई की याद दिलाएं",
+    "सभी 700 श्लोकों तक ऑफलाइन पहुँच",
+    "पसंदीदा और पढ़ाई की प्रगति ट्रैकिंग",
+    "डार्क मोड सपोर्ट",
+  ],
+};
 
 const RateApp = () => {
   const { isDarkMode } = useTheme();
+  const t = useTranslation();
+  const isHindi = t.meaningKey === "hi";
 
   const c = {
     text: isDarkMode ? "#E8DEF8" : "#3E2723",
@@ -38,16 +50,22 @@ const RateApp = () => {
               <Star key={i} size={34} color="#F59E0B" fill="#F59E0B" />
             ))}
           </View>
-          <Text style={[styles.heroTitle, { color: c.text }]}>Enjoying the App?</Text>
+          <Text style={[styles.heroTitle, { color: c.text }]}>
+            {isHindi ? "ऐप पसंद आ रहा है?" : "Enjoying the App?"}
+          </Text>
           <Text style={[styles.heroSub, { color: c.sub }]}>
-            Your rating helps more seekers discover the wisdom of the Gita 🙏
+            {isHindi
+              ? "आपकी रेटिंग से और अधिक साधक गीता के ज्ञान को खोज सकते हैं 🙏"
+              : "Your rating helps more seekers discover the wisdom of the Gita 🙏"}
           </Text>
         </View>
 
         {/* Features card */}
         <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
-          <Text style={[styles.cardTitle, { color: c.text }]}>What you get</Text>
-          {FEATURES.map((feature) => (
+          <Text style={[styles.cardTitle, { color: c.text }]}>
+            {isHindi ? "आपको क्या मिलता है" : "What you get"}
+          </Text>
+          {(isHindi ? FEATURES.hi : FEATURES.en).map((feature) => (
             <View key={feature} style={styles.featureRow}>
               <CheckCircle size={16} color="#22C55E" />
               <Text style={[styles.featureText, { color: c.sub }]}>{feature}</Text>
@@ -72,7 +90,7 @@ const RateApp = () => {
             style={styles.ctaBtn}
           >
             <Star size={18} color="#fff" fill="#fff" />
-            <Text style={styles.ctaBtnText}>Rate on Play Store</Text>
+            <Text style={styles.ctaBtnText}>{isHindi ? "Play Store पर रेट करें" : "Rate on Play Store"}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>

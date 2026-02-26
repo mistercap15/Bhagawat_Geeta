@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState, useCallback } from "react";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
+import { useTranslation } from "@/utils/translations";
 import { getSlok } from "@/utils/gitaData";
 import MaterialLoader from "@/components/MaterialLoader";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,6 +16,7 @@ export default function FavoritesScreen() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { isDarkMode } = useTheme();
+  const t = useTranslation();
 
   const c = {
     text: isDarkMode ? "#E8DEF8" : "#3E2723",
@@ -63,7 +65,7 @@ export default function FavoritesScreen() {
         style={styles.center}
       >
         <MaterialLoader size="large" />
-        <Text style={[styles.loadingText, { color: c.sub }]}>Loading favorites…</Text>
+        <Text style={[styles.loadingText, { color: c.sub }]}>{t.loadingFavorites}</Text>
       </LinearGradient>
     );
   }
@@ -78,9 +80,9 @@ export default function FavoritesScreen() {
           <View style={[styles.emptyIcon, { backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6" }]}>
             <Heart size={38} color={isDarkMode ? "#D0BCFF" : "#8A4D24"} />
           </View>
-          <Text style={[styles.emptyTitle, { color: c.text }]}>No Favorites Yet</Text>
+          <Text style={[styles.emptyTitle, { color: c.text }]}>{t.noFavoritesTitle}</Text>
           <Text style={[styles.emptySub, { color: c.sub }]}>
-            Tap the Favourite button while reading a verse to save it here 🙏
+            {t.noFavoritesSub}
           </Text>
         </Animated.View>
       </LinearGradient>
@@ -104,9 +106,9 @@ export default function FavoritesScreen() {
             <Heart size={18} color="#C41E3A" fill="#C41E3A" />
           </View>
           <View>
-            <Text style={[styles.pageTitle, { color: c.text }]}>Saved Verses</Text>
+            <Text style={[styles.pageTitle, { color: c.text }]}>{t.savedVerses}</Text>
             <Text style={[styles.pageSub, { color: c.sub }]}>
-              {favorites.length} favorite{favorites.length !== 1 ? "s" : ""}
+              {t.favoriteCount(favorites.length)}
             </Text>
           </View>
         </View>
