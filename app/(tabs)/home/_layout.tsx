@@ -57,6 +57,10 @@ export default function HomeLayout() {
           name="audio-recitation"
           options={{ title: "Audio Recitation", headerShown: false }}
         />
+        <Stack.Screen
+          name="achievements"
+          options={{ title: "My Journey", headerShown: false }}
+        />
       </Stack>
     </View>
   );

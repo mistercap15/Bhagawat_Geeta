@@ -2,8 +2,10 @@ import { Tabs } from "expo-router";
 import { HomeIcon, SearchIcon } from "lucide-react-native";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
+import { AchievementProvider } from "@/context/AchievementContext";
 import { useTranslation } from "@/utils/translations";
 import ThemedLayout from "@/components/ThemedLayout";
+import AchievementUnlockedModal from "@/components/AchievementUnlockedModal";
 import Toast from "react-native-toast-message";
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
@@ -29,9 +31,11 @@ export default function Layout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <LanguageProvider>
-            <BottomSheetModalProvider>
-              <LayoutContent />
-            </BottomSheetModalProvider>
+            <AchievementProvider>
+              <BottomSheetModalProvider>
+                <LayoutContent />
+              </BottomSheetModalProvider>
+            </AchievementProvider>
           </LanguageProvider>
         </ThemeProvider>
       </SafeAreaProvider>
@@ -102,6 +106,7 @@ function LayoutContent() {
           />
         </Tabs>
       </ThemedLayout>
+      <AchievementUnlockedModal />
       <Toast />
     </>
   );

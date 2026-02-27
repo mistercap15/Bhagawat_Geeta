@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -34,6 +34,7 @@ import { PanGestureHandler } from "react-native-gesture-handler";
 import { getSlok } from "@/utils/gitaData";
 import { useTheme } from "@/context/ThemeContext";
 import { useTranslation } from "@/utils/translations";
+import { useAchievements } from "@/context/AchievementContext";
 import MaterialLoader from "@/components/MaterialLoader";
 import { sendPracticeCompleteNotification } from "@/utils/notifications";
 
@@ -288,6 +289,7 @@ export default function VerseDetails() {
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
   const t = useTranslation();
+  const { checkAndUpdate, unlockSpecial } = useAchievements();
 
   const [verse, setVerse] = useState<any>(null);
   const [nextVerse, setNextVerse] = useState<any>(null);
@@ -705,6 +707,8 @@ export default function VerseDetails() {
     const key = `favorite_verse_${chapterId}_${currentVerseId}`;
     if (v) {
       await AsyncStorage.setItem(key, "true");
+      // Check favorite-based achievements
+      checkAndUpdate();
     } else {
       await AsyncStorage.removeItem(key);
     }
@@ -718,10 +722,8 @@ export default function VerseDetails() {
       const today = new Date().toISOString().split("T")[0];
       const verseKey = `${chapterId}_${currentVerseId}`;
 
-      const existing = await AsyncStorage.getItem(chapterKey);
+      const [[, existing], [, rawDaily]] = await AsyncStorage.multiGet([chapterKey, dailyKey]);
       let readVerses: number[] = existing ? JSON.parse(existing) : [];
-
-      const rawDaily = await AsyncStorage.getItem(dailyKey);
       let dailyLog = rawDaily ? JSON.parse(rawDaily) : {};
 
       if (!dailyLog[today]) {
@@ -778,9 +780,6 @@ export default function VerseDetails() {
       }
 
       // ─── CHECK DAILY GOAL & FIRE NOTIFICATION ─────────────
-      // This runs right here in the verse screen so the user
-      // gets the "Sadhana Complete" notification immediately
-      // when they hit their target — no need to visit daily practice.
       if (updatedReadState) {
         const rawTarget = await AsyncStorage.getItem(targetKey);
         const dailyTarget = rawTarget ? Number(rawTarget) : 3;
@@ -789,6 +788,15 @@ export default function VerseDetails() {
         if (todayReadCount >= dailyTarget) {
           await sendPracticeCompleteNotification();
         }
+
+        // ─── CHECK ACHIEVEMENTS ──────────────────────────────
+        // Time-based special achievements
+        const hour = new Date().getHours();
+        if (hour < 6) unlockSpecial("dawn_reader");
+        if (hour >= 22) unlockSpecial("night_scholar");
+
+        // General achievement check (reading milestones, chapters, streak)
+        checkAndUpdate();
       }
     } catch (error) {
       console.log("Error updating read state:", error);
@@ -1383,9 +1391,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   burstContainer: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    width: 0,
+    height: 0,
     zIndex: 100,
   },
   particle: {
@@ -1404,6 +1414,10 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
+    top: "50%",
+    left: "50%",
+    marginTop: -14,
+    marginLeft: -14,
   },
   glowRing: {
     position: "absolute",
@@ -1412,5 +1426,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     zIndex: 99,
+    top: "50%",
+    left: "50%",
+    marginTop: -20,
+    marginLeft: -20,
   },
 });

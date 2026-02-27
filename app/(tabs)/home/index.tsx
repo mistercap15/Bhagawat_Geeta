@@ -10,12 +10,15 @@ import {
 } from "react-native";
 import { useTheme } from "@/context/ThemeContext";
 import { useTranslation } from "@/utils/translations";
+import { useAchievements } from "@/context/AchievementContext";
+import { getUserRank } from "@/utils/achievements";
 import {
   Share2,
   BookOpen,
   Star,
   Sparkles,
   Target,
+  Trophy,
   ChevronRight,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
@@ -66,6 +69,15 @@ const NAV_ITEM_CONFIGS = [
     bg: "#F0FDF4",
     bgDark: "#1A2E1E",
   },
+  {
+    icon: Trophy,
+    labelKey: "myJourney" as const,
+    subKey: "myJourneySub" as const,
+    route: "/(tabs)/home/achievements",
+    color: "#F59E0B",
+    bg: "#FFFBEB",
+    bgDark: "#2E2810",
+  },
 ];
 
 export default function HomeScreen() {
@@ -76,7 +88,10 @@ export default function HomeScreen() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const t = useTranslation();
+  const { userStats, unlockedAchievements } = useAchievements();
   const viewRef = useRef<View>(null);
+
+  const currentRank = getUserRank(userStats.totalVersesRead);
 
   function getGreeting(): string {
     const h = new Date().getHours();
@@ -240,6 +255,41 @@ export default function HomeScreen() {
           <Text style={[styles.appTagline, { color: c.sub }]}>
             {t.appTagline}
           </Text>
+        </Animated.View>
+
+        {/* ── Rank & Achievements strip ── */}
+        <Animated.View
+          entering={FadeInDown.duration(500).delay(120)}
+          style={styles.rankStrip}
+        >
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push("/(tabs)/home/achievements" as any)}
+            style={[styles.rankStripInner, { backgroundColor: c.card, borderColor: c.border }]}
+          >
+            <LinearGradient
+              colors={["#8A4D2422", "#D9770622", "#F59E0B22"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[StyleSheet.absoluteFill, { borderRadius: 18 }]}
+            />
+            <Text style={styles.rankEmoji}>{currentRank.emoji}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rankName, { color: currentRank.color }]}>
+                {currentRank.title}
+              </Text>
+              <Text style={[styles.rankSub, { color: c.sub }]}>
+                {userStats.totalVersesRead} verses · {unlockedAchievements.length} badges
+              </Text>
+            </View>
+            <View style={[styles.rankBadgeCount, { backgroundColor: "#D97706" + "22" }]}>
+              <Trophy size={12} color="#D97706" />
+              <Text style={[styles.rankBadgeCountText, { color: "#D97706" }]}>
+                {unlockedAchievements.length}
+              </Text>
+            </View>
+            <ChevronRight size={16} color={c.sub} />
+          </TouchableOpacity>
         </Animated.View>
 
         {/* ── Shloka of the Day ── */}
@@ -546,4 +596,34 @@ const styles = StyleSheet.create({
   omSymbol: { fontSize: 28, fontWeight: "700", marginBottom: 10, letterSpacing: 1 },
   creditTop: { fontSize: 13, letterSpacing: 0.4 },
   creditName: { fontSize: 13, fontWeight: "600", letterSpacing: 0.4 },
+
+  // Rank strip
+  rankStrip: { marginHorizontal: 20, marginBottom: 16 },
+  rankStripInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: "hidden",
+    shadowColor: "#D97706",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  rankEmoji: { fontSize: 26 },
+  rankName: { fontSize: 14, fontWeight: "800", marginBottom: 1 },
+  rankSub: { fontSize: 11 },
+  rankBadgeCount: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  rankBadgeCountText: { fontSize: 12, fontWeight: "700" },
 });

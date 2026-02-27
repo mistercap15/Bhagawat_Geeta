@@ -108,6 +108,27 @@ const translations = {
     englishLabel: 'English',
     hindiLabel: 'हिंदी',
 
+    // Achievements screen
+    myJourney: 'My Journey',
+    myJourneySub: 'Earn badges & track progress',
+    achievementsUnlocked: (n: number, total: number) => `${n}/${total} badges earned`,
+    currentRank: 'Current Rank',
+    versesRead: 'Verses Read',
+    chaptersDone: 'Chapters Done',
+    dayStreak2: 'Day Streak',
+    favoritesCount2: 'Favorites',
+    readingMilestones: 'Reading Milestones',
+    chapterMastery: 'Chapter Mastery',
+    streakConsistency: 'Streak & Consistency',
+    specialBadges: 'Special Badges',
+    nextRankLabel: 'Next:',
+    versesToGo: 'verses to go',
+    maxRankAchieved: 'Maximum rank achieved!',
+    keepReadingBadges: 'Keep reading to unlock more badges 🙏',
+    achievementUnlocked: 'ACHIEVEMENT UNLOCKED',
+    awesomeBtn: 'Awesome! 🙏',
+    nextRankLabel2: 'Next rank:',
+
     // Locale for date formatting
     dateLocale: 'en-US',
 
@@ -221,6 +242,27 @@ const translations = {
     // Language labels
     englishLabel: 'English',
     hindiLabel: 'हिंदी',
+
+    // Achievements screen
+    myJourney: 'मेरी यात्रा',
+    myJourneySub: 'बैज अर्जित करें और प्रगति देखें',
+    achievementsUnlocked: (n: number, total: number) => `${n}/${total} बैज अर्जित`,
+    currentRank: 'वर्तमान स्तर',
+    versesRead: 'श्लोक पढ़े',
+    chaptersDone: 'अध्याय पूर्ण',
+    dayStreak2: 'दिन की श्रृंखला',
+    favoritesCount2: 'पसंदीदा',
+    readingMilestones: 'पठन उपलब्धियां',
+    chapterMastery: 'अध्याय महारत',
+    streakConsistency: 'निरंतरता',
+    specialBadges: 'विशेष बैज',
+    nextRankLabel: 'अगला:',
+    versesToGo: 'और श्लोक',
+    maxRankAchieved: 'आपने सर्वोच्च स्तर प्राप्त किया!',
+    keepReadingBadges: 'पढ़ते रहें, बैज अर्जित करते रहें 🙏',
+    achievementUnlocked: 'उपलब्धि अर्जित',
+    awesomeBtn: 'बहुत अच्छे! 🙏',
+    nextRankLabel2: 'अगला स्तर:',
 
     // Locale for date formatting
     dateLocale: 'hi-IN',

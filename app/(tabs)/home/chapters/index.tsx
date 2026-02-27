@@ -112,16 +112,22 @@ export default function ChaptersScreen() {
                   },
                 ]}
               >
-                {/* Chapter number circle */}
+                {/* Chapter number circle — gold crown when complete */}
                 <View
                   style={[
                     styles.chapterBadge,
-                    { backgroundColor: color + "22", borderColor: color + "55" },
+                    pct === 100
+                      ? { backgroundColor: "#F59E0B22", borderColor: "#D97706", borderWidth: 2 }
+                      : { backgroundColor: color + "22", borderColor: color + "55" },
                   ]}
                 >
-                  <Text style={[styles.chapterNum, { color }]}>
-                    {chapter.chapter_number}
-                  </Text>
+                  {pct === 100 ? (
+                    <Text style={styles.completedCrown}>👑</Text>
+                  ) : (
+                    <Text style={[styles.chapterNum, { color }]}>
+                      {chapter.chapter_number}
+                    </Text>
+                  )}
                 </View>
 
                 {/* Text content */}
@@ -215,6 +221,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   chapterNum: { fontSize: 18, fontWeight: "800" },
+  completedCrown: { fontSize: 22 },
 
   cardBody: { flex: 1 },
   cardTopRow: {
