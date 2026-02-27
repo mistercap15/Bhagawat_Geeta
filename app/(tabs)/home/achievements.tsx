@@ -1,10 +1,11 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import {
   ScrollView,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
@@ -22,6 +23,8 @@ import {
   getRankProgress,
   AchievementCategory,
 } from "@/utils/achievements";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SavedGuidance, GUIDANCE_STORAGE_KEY } from "@/data/situationGuidance";
 
 const CATEGORY_META: Record<AchievementCategory, { label: string; labelHi: string; icon: string }> = {
   reading: { label: "Reading Milestones", labelHi: "पठन उपलब्धियां", icon: "📖" },
@@ -138,13 +141,47 @@ export default function AchievementsScreen() {
   const t = useTranslation();
   const { userStats, unlockedAchievements, checkAndUpdate } = useAchievements();
   const language = t.meaningKey === "en" ? "en" : "hi";
+  const [savedGuidance, setSavedGuidance] = useState<SavedGuidance[]>([]);
 
   // Refresh stats when screen focused
   useFocusEffect(
     useCallback(() => {
       checkAndUpdate();
+      AsyncStorage.getItem(GUIDANCE_STORAGE_KEY).then((raw) => {
+        if (raw) {
+          try {
+            setSavedGuidance(JSON.parse(raw));
+          } catch {
+            setSavedGuidance([]);
+          }
+        }
+      });
     }, [])
   );
+
+  const handleUnsave = (sessionId: string) => {
+    Alert.alert(
+      language === "hi" ? "हटाएं?" : "Remove session?",
+      language === "hi"
+        ? "क्या आप इस मार्गदर्शन सत्र को My Journey से हटाना चाहते हैं?"
+        : "Remove this guidance session from My Journey?",
+      [
+        { text: language === "hi" ? "रद्द करें" : "Cancel", style: "cancel" },
+        {
+          text: language === "hi" ? "हटाएं" : "Remove",
+          style: "destructive",
+          onPress: async () => {
+            const updated = savedGuidance.filter((s) => s.id !== sessionId);
+            setSavedGuidance(updated);
+            await AsyncStorage.setItem(
+              GUIDANCE_STORAGE_KEY,
+              JSON.stringify(updated)
+            );
+          },
+        },
+      ]
+    );
+  };
 
   const { totalVersesRead, chaptersCompleted, currentStreak, favoritesCount } = userStats;
   const unlockedIds = unlockedAchievements.map((a) => a.id);
@@ -348,6 +385,80 @@ export default function AchievementsScreen() {
           );
         })}
 
+        {/* ── Saved Guidance ── */}
+        {savedGuidance.length > 0 && (
+          <Animated.View
+            entering={FadeInDown.duration(400).delay(360)}
+            style={styles.categorySection}
+          >
+            <View style={styles.categoryHeader}>
+              <Text style={styles.categoryIcon}>🙏</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.categoryTitle, { color: c.text }]}>
+                  {language === "hi" ? "सहेजा गया मार्गदर्शन" : "Saved Guidance"}
+                </Text>
+              </View>
+              <View style={[styles.categoryBadgeCount, { backgroundColor: isDarkMode ? "#3A3444" : "#FAF5FF" }]}>
+                <Text style={[styles.categoryBadgeCountText, { color: "#A855F7" }]}>
+                  {savedGuidance.length}
+                </Text>
+              </View>
+            </View>
+            <View style={{ gap: 10 }}>
+              {savedGuidance.slice().reverse().map((session) => (
+                <View
+                  key={session.id}
+                  style={[
+                    styles.guidanceCard,
+                    { backgroundColor: c.card, borderColor: c.border },
+                  ]}
+                >
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() =>
+                      router.push(
+                        `/(tabs)/home/guidance/${session.situationId}` as any
+                      )
+                    }
+                    style={styles.guidanceCardInner}
+                  >
+                    <Text style={styles.guidanceEmoji}>{session.situationEmoji}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.guidanceLabel, { color: c.text }]}>
+                        {session.situationLabel}
+                      </Text>
+                      <Text style={[styles.guidanceDate, { color: c.sub }]}>
+                        {new Date(session.savedAt).toLocaleDateString(
+                          language === "hi" ? "hi-IN" : "en-US",
+                          { day: "numeric", month: "short", year: "numeric" }
+                        )}
+                      </Text>
+                    </View>
+                    <Text style={[styles.guidanceArrow, { color: "#A855F7" }]}>
+                      →
+                    </Text>
+                  </TouchableOpacity>
+                  {/* × remove button */}
+                  <TouchableOpacity
+                    onPress={() => handleUnsave(session.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={[
+                      styles.guidanceRemoveBtn,
+                      {
+                        backgroundColor: isDarkMode ? "#3A3444" : "#F5F0EC",
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.guidanceRemoveText, { color: c.sub }]}>
+                      ×
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </Animated.View>
+        )}
+
         {/* ── Bottom note ── */}
         <Animated.View entering={FadeInUp.duration(400).delay(400)} style={styles.bottomNote}>
           <Text style={[styles.bottomNoteText, { color: c.sub }]}>
@@ -510,6 +621,38 @@ const styles = StyleSheet.create({
   lockIndicator: {
     marginTop: 6,
   },
+
+  // Saved Guidance cards
+  guidanceCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+    overflow: "hidden",
+  },
+  guidanceCardInner: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+  },
+  guidanceEmoji: { fontSize: 28 },
+  guidanceLabel: { fontSize: 14, fontWeight: "700", marginBottom: 2 },
+  guidanceDate: { fontSize: 12 },
+  guidanceArrow: { fontSize: 18, fontWeight: "700" },
+  guidanceRemoveBtn: {
+    width: 36,
+    alignSelf: "stretch",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  guidanceRemoveText: { fontSize: 20, fontWeight: "400", lineHeight: 22 },
 
   // Bottom
   bottomNote: { alignItems: "center", marginTop: 8 },

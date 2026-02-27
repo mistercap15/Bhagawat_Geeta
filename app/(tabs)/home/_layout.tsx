@@ -61,6 +61,14 @@ export default function HomeLayout() {
           name="achievements"
           options={{ title: "My Journey", headerShown: false }}
         />
+        <Stack.Screen
+          name="guidance"
+          options={{ title: "Guidance", headerShown: false }}
+        />
+        <Stack.Screen
+          name="guidance/[situation]"
+          options={{ title: "Guidance", headerShown: false }}
+        />
       </Stack>
     </View>
   );

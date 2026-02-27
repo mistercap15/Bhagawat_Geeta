@@ -108,6 +108,26 @@ const translations = {
     englishLabel: 'English',
     hindiLabel: 'हिंदी',
 
+    // Nav card — Life Guidance
+    guidance: 'Life Guidance',
+    guidanceSub: 'Wisdom for your moment',
+
+    // Guidance screen
+    howAreYouFeeling: 'How are you feeling?',
+    guidanceSubtitle: "Krishna's wisdom meets you where you are",
+    selectSituation: 'Select your situation',
+
+    // Results screen
+    versesForYou: 'Verses for You',
+    reflectTitle: 'Take a Moment to Reflect',
+    saveToJourney: 'Save to My Journey',
+    savedToJourney: 'Saved ✓',
+    openFullVerse: 'Read full verse →',
+
+    // Saved Guidance section on achievements
+    savedGuidance: 'Saved Guidance',
+    guidanceSessionsLabel: (n: number) => `${n} session${n !== 1 ? 's' : ''} saved`,
+
     // Achievements screen
     myJourney: 'My Journey',
     myJourneySub: 'Earn badges & track progress',
@@ -242,6 +262,26 @@ const translations = {
     // Language labels
     englishLabel: 'English',
     hindiLabel: 'हिंदी',
+
+    // Nav card — Life Guidance
+    guidance: 'जीवन मार्गदर्शन',
+    guidanceSub: 'आपके पल के लिए ज्ञान',
+
+    // Guidance screen
+    howAreYouFeeling: 'आप कैसा महसूस कर रहे हैं?',
+    guidanceSubtitle: 'कृष्ण का ज्ञान आपके पास आता है',
+    selectSituation: 'अपनी स्थिति चुनें',
+
+    // Results screen
+    versesForYou: 'आपके लिए श्लोक',
+    reflectTitle: 'एक पल के लिए विचार करें',
+    saveToJourney: 'मेरी यात्रा में सहेजें',
+    savedToJourney: 'सहेजा गया ✓',
+    openFullVerse: 'पूरा श्लोक पढ़ें →',
+
+    // Saved Guidance section on achievements
+    savedGuidance: 'सहेजा गया मार्गदर्शन',
+    guidanceSessionsLabel: (n: number) => `${n} सत्र सहेजे`,
 
     // Achievements screen
     myJourney: 'मेरी यात्रा',

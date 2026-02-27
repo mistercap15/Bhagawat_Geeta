@@ -19,6 +19,7 @@ import {
   Sparkles,
   Target,
   Trophy,
+  Heart,
   ChevronRight,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
@@ -77,6 +78,15 @@ const NAV_ITEM_CONFIGS = [
     color: "#F59E0B",
     bg: "#FFFBEB",
     bgDark: "#2E2810",
+  },
+  {
+    icon: Heart,
+    labelKey: "guidance" as const,
+    subKey: "guidanceSub" as const,
+    route: "/(tabs)/home/guidance",
+    color: "#A855F7",
+    bg: "#FAF5FF",
+    bgDark: "#2A1A3E",
   },
 ];
 
