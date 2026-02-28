@@ -267,75 +267,80 @@ export default function HomeScreen() {
             SHLOKA OF THE DAY
         ═══════════════════════════════════════════════════════════════════ */}
         <Animated.View entering={FadeInDown.duration(500).delay(290)} style={styles.section}>
-          {/* collapsable={false} is critical on Android so captureRef works */}
-          <View
-            ref={viewRef}
-            collapsable={false}
-            style={[styles.shlokaCard, { backgroundColor: c.card, borderColor: c.border }]}
-          >
-            {/* Gradient header bar */}
-            <LinearGradient
-              colors={["#8A4D24", "#D97706", "#F59E0B"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.shlokaHeader}
+          <View style={[styles.shlokaCard, { backgroundColor: c.card, borderColor: c.border }]}>
+            {/* ref wraps only the content to capture — share button is intentionally outside */}
+            <View
+              ref={viewRef}
+              collapsable={false}
+              style={{ backgroundColor: c.card, overflow: "hidden" }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-                <Sparkles size={13} color="rgba(255,255,255,0.9)" />
-                <Text style={styles.shlokaHeaderLabel}>{t.shlokaOfTheDay}</Text>
-              </View>
-              {shlokaOfTheDay && (
-                <View style={styles.shlokaHeaderBadge}>
-                  <Text style={styles.shlokaHeaderBadgeText}>
-                    {shlokaOfTheDay.chapter}:{shlokaOfTheDay.verse}
+              {/* Gradient header bar */}
+              <LinearGradient
+                colors={["#8A4D24", "#D97706", "#F59E0B"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.shlokaHeader}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+                  <Sparkles size={13} color="rgba(255,255,255,0.9)" />
+                  <Text style={styles.shlokaHeaderLabel}>{t.shlokaOfTheDay}</Text>
+                </View>
+                {shlokaOfTheDay && (
+                  <View style={styles.shlokaHeaderBadge}>
+                    <Text style={styles.shlokaHeaderBadgeText}>
+                      {shlokaOfTheDay.chapter}:{shlokaOfTheDay.verse}
+                    </Text>
+                  </View>
+                )}
+              </LinearGradient>
+
+              {/* Body — no share button here */}
+              {loading ? (
+                <View style={{ paddingVertical: 32 }}>
+                  <MaterialLoader size="large" />
+                </View>
+              ) : error ? (
+                <Text style={[styles.shlokaErrorText, { color: c.sub }]}>
+                  {t.pullToRefresh}
+                </Text>
+              ) : shlokaOfTheDay ? (
+                <View style={styles.shlokaBody}>
+                  <Text style={[styles.shlokText, { color: c.text }]}>
+                    {shlokaOfTheDay.text}
+                  </Text>
+
+                  <View style={styles.shlokaDivider}>
+                    <View style={[styles.shlokaDivLine, {
+                      backgroundColor: isDarkMode ? "#1A3550" : "#E8D5B0",
+                    }]} />
+                    <Text style={[styles.shlokaDivGlyph, { color: isDarkMode ? "#FFB347" : "#D97706" }]}>
+                      ❋
+                    </Text>
+                    <View style={[styles.shlokaDivLine, {
+                      backgroundColor: isDarkMode ? "#1A3550" : "#E8D5B0",
+                    }]} />
+                  </View>
+
+                  <Text style={[styles.translationText, { color: c.sub }]}>
+                    {shlokaOfTheDay.translation}
                   </Text>
                 </View>
-              )}
-            </LinearGradient>
+              ) : null}
+            </View>
 
-            {/* Body */}
-            {loading ? (
-              <View style={{ paddingVertical: 32 }}>
-                <MaterialLoader size="large" />
-              </View>
-            ) : error ? (
-              <Text style={[styles.shlokaErrorText, { color: c.sub }]}>
-                {t.pullToRefresh}
-              </Text>
-            ) : shlokaOfTheDay ? (
-              <View style={styles.shlokaBody}>
-                <Text style={[styles.shlokText, { color: c.text }]}>
-                  {shlokaOfTheDay.text}
+            {/* Share button — outside the captured ref so it won't appear in the shared image */}
+            {shlokaOfTheDay && !loading && !error && (
+              <TouchableOpacity
+                onPress={shareShloka}
+                activeOpacity={0.75}
+                style={[styles.shareRow, { paddingHorizontal: 18, paddingBottom: 14 }]}
+              >
+                <Share2 size={13} color={c.accent} />
+                <Text style={[styles.shareBtnText, { color: c.accent }]}>
+                  {t.shareVerse}
                 </Text>
-
-                <View style={styles.shlokaDivider}>
-                  <View style={[styles.shlokaDivLine, {
-                    backgroundColor: isDarkMode ? "#1A3550" : "#E8D5B0",
-                  }]} />
-                  <Text style={[styles.shlokaDivGlyph, { color: isDarkMode ? "#FFB347" : "#D97706" }]}>
-                    ❋
-                  </Text>
-                  <View style={[styles.shlokaDivLine, {
-                    backgroundColor: isDarkMode ? "#1A3550" : "#E8D5B0",
-                  }]} />
-                </View>
-
-                <Text style={[styles.translationText, { color: c.sub }]}>
-                  {shlokaOfTheDay.translation}
-                </Text>
-
-                <TouchableOpacity
-                  onPress={shareShloka}
-                  activeOpacity={0.75}
-                  style={styles.shareRow}
-                >
-                  <Share2 size={13} color={c.accent} />
-                  <Text style={[styles.shareBtnText, { color: c.accent }]}>
-                    {t.shareVerse}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
+              </TouchableOpacity>
+            )}
           </View>
         </Animated.View>
 
