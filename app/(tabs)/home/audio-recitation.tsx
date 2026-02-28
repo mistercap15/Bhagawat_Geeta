@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
 import { ScrollView, Text, TouchableOpacity, View, StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
 import { useTheme } from "@/context/ThemeContext";
 import { LinearGradient } from "expo-linear-gradient";
-import { Music, PlayCircle, Clock } from "lucide-react-native";
+import { Music, PlayCircle, Clock, ChevronLeft } from "lucide-react-native";
 
 const RECITATION_SOURCES = [
   {
@@ -27,24 +28,25 @@ const RECITATION_SOURCES = [
 ];
 
 export default function AudioRecitationScreen() {
+  const router = useRouter();
   const { isDarkMode } = useTheme();
   const [selected, setSelected] = useState(RECITATION_SOURCES[0]);
 
   const c = useMemo(
     () => ({
-      bg: isDarkMode ? "#1C1B1F" : "#FFF8F1",
-      card: isDarkMode ? "#2B2930" : "#FFFDF9",
-      text: isDarkMode ? "#F3EDF7" : "#3E2723",
-      sub: isDarkMode ? "#CAC4D0" : "#625B71",
-      border: isDarkMode ? "#4A4458" : "#E8D5C4",
-      activeTrack: isDarkMode ? "#3A3444" : "#FFF1E6",
+      bg: isDarkMode ? "#040C18" : "#FFF3DC",
+      card: isDarkMode ? "#081C30" : "#FFFDF8",
+      text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+      sub: isDarkMode ? "#8AACC8" : "#7A5230",
+      border: isDarkMode ? "#1A3550" : "#F0D080",
+      activeTrack: isDarkMode ? "#0D2540" : "#FFF1E6",
     }),
     [isDarkMode]
   );
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -53,6 +55,9 @@ export default function AudioRecitationScreen() {
       >
         {/* Header */}
         <View style={styles.pageHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <ChevronLeft size={22} color={c.text} />
+          </TouchableOpacity>
           <View style={[styles.headerIconWrap, { backgroundColor: "#9B59B620" }]}>
             <Music size={18} color="#9B59B6" />
           </View>
@@ -113,7 +118,7 @@ export default function AudioRecitationScreen() {
               <View
                 style={[
                   styles.trackIcon,
-                  { backgroundColor: active ? "#8A4D2430" : (isDarkMode ? "#3A3444" : "#F3EDF7") },
+                  { backgroundColor: active ? "#8A4D2430" : (isDarkMode ? "#0D2540" : "#F3EDF7") },
                 ]}
               >
                 <PlayCircle
@@ -139,6 +144,7 @@ const styles = StyleSheet.create({
   scroll: { padding: 20, paddingBottom: 120 },
 
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 6, marginTop: 4 },
+  backBtn: { width: 38, height: 38, justifyContent: "center", alignItems: "center" },
   headerIconWrap: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
   pageTitle: { fontSize: 22, fontWeight: "800" },
   pageSub: { fontSize: 12, marginTop: 2 },

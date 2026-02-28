@@ -7,7 +7,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useTranslation } from "@/utils/translations";
 import MaterialLoader from "@/components/MaterialLoader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { CheckCircle, ChevronRight } from "lucide-react-native";
+import { CheckCircle, ChevronLeft, ChevronRight } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 export default function ShlokasScreen() {
@@ -22,11 +22,11 @@ export default function ShlokasScreen() {
   const t = useTranslation();
 
   const c = {
-    text: isDarkMode ? "#E8DEF8" : "#3E2723",
-    sub: isDarkMode ? "#CAC4D0" : "#625B71",
-    card: isDarkMode ? "#2B2930" : "#FFFDF9",
-    border: isDarkMode ? "#4A4458" : "#E8D5C4",
-    track: isDarkMode ? "#3A3444" : "#E8D5C4",
+    text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+    sub: isDarkMode ? "#8AACC8" : "#7A5230",
+    card: isDarkMode ? "#081C30" : "#FFFDF8",
+    border: isDarkMode ? "#1A3550" : "#F0D080",
+    track: isDarkMode ? "#0D2540" : "#F0D080",
   };
 
   const fetchChapterData = async () => {
@@ -58,7 +58,7 @@ export default function ShlokasScreen() {
   if (loading || !chapter) {
     return (
       <LinearGradient
-        colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+        colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
         style={styles.center}
       >
         <MaterialLoader size="large" />
@@ -74,7 +74,7 @@ export default function ShlokasScreen() {
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -84,9 +84,14 @@ export default function ShlokasScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
+        {/* Back button */}
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <ChevronLeft size={22} color={c.text} />
+        </TouchableOpacity>
+
         {/* Chapter header card */}
         <LinearGradient
-          colors={isDarkMode ? ["#2B2930", "#352F3F"] : ["#FFF1E6", "#FFEAD7"]}
+          colors={isDarkMode ? ["#081C30", "#0D2540"] : ["#FFF3DC", "#FFE8B0"]}
           style={[styles.headerCard, { borderColor: c.border }]}
         >
           <Text style={styles.chapterLabel}>{t.meaningKey === 'en' ? 'CHAPTER' : 'अध्याय'} {chapter.chapter_number}</Text>
@@ -151,7 +156,7 @@ export default function ShlokasScreen() {
                       backgroundColor: isRead
                         ? "#22C55E20"
                         : isDarkMode
-                        ? "#3A3444"
+                        ? "#0D2540"
                         : "#FFF1E6",
                     },
                   ]}
@@ -193,6 +198,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   loadingText: { marginTop: 12, fontSize: 14 },
   scroll: { paddingBottom: 110 },
+  backBtn: { width: 38, height: 38, justifyContent: "center", alignItems: "center", marginTop: 12, marginLeft: 14 },
 
   headerCard: { margin: 20, marginBottom: 0, borderRadius: 22, padding: 20, borderWidth: 1 },
   chapterLabel: {

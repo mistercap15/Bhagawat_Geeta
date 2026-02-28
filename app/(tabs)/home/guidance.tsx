@@ -77,16 +77,16 @@ export default function GuidanceScreen() {
   const { language } = useLanguage();
 
   const c = {
-    bg: isDarkMode ? "#1C1B1F" : "#FFF8F1",
-    card: isDarkMode ? "#2B2930" : "#FFFDF9",
-    text: isDarkMode ? "#E8DEF8" : "#3E2723",
-    sub: isDarkMode ? "#CAC4D0" : "#625B71",
-    border: isDarkMode ? "#4A4458" : "#E8D5C4",
+    bg: isDarkMode ? "#040C18" : "#FFF3DC",
+    card: isDarkMode ? "#081C30" : "#FFFDF8",
+    text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+    sub: isDarkMode ? "#8AACC8" : "#7A5230",
+    border: isDarkMode ? "#1A3550" : "#F0D080",
   };
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -115,7 +115,7 @@ export default function GuidanceScreen() {
         {/* ── Decorative OM ── */}
         <Animated.View entering={FadeInDown.duration(400).delay(60)} style={styles.omWrap}>
           <LinearGradient
-            colors={["#A855F733", "#A855F711"]}
+            colors={["#D9770633", "#D9770611"]}
             style={styles.omCircle}
           >
             <Text style={styles.omText}>🙏</Text>
@@ -183,6 +183,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 10,
+    borderWidth: 1.5,
+    borderColor: "#D9770644",
   },
   omText: { fontSize: 32 },
   selectLabel: { fontSize: 13, fontWeight: "600", letterSpacing: 0.4 },

@@ -311,18 +311,18 @@ export default function VerseDetails() {
 
   const palette = useMemo(
     () => ({
-      gradient: isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"],
-      page: isDarkMode ? "#3A3444" : "#FFF8ED",
-      pageBorder: isDarkMode ? "#4A4458" : "#E8D5C4",
-      text: isDarkMode ? "#F3EDF7" : "#3E2723",
-      muted: isDarkMode ? "#CAC4D0" : "#625B71",
+      gradient: isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"],
+      page: isDarkMode ? "#0D2540" : "#FFF8ED",
+      pageBorder: isDarkMode ? "#1A3550" : "#F0D080",
+      text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+      muted: isDarkMode ? "#8AACC8" : "#7A5230",
       accent: isDarkMode ? "#FFB59D" : "#8A4D24",
       accentLight: isDarkMode ? "#FFCDB5" : "#A0522D",
-      buttonBg: isDarkMode ? "#352F3F" : "#FFFDF9",
-      innerCard: isDarkMode ? "#312C3A" : "#FDF2E5",
+      buttonBg: isDarkMode ? "#0D2540" : "#FFFDF8",
+      innerCard: isDarkMode ? "#081C30" : "#FDF2E5",
       shadow: isDarkMode ? "rgba(0,0,0,0.6)" : "rgba(138,77,36,0.2)",
       bookmark: "#C41E3A",
-      foldBack: isDarkMode ? "#2A2530" : "#E8D9C8",
+      foldBack: isDarkMode ? "#040C18" : "#E8D9C8",
       foldHighlight: isDarkMode
         ? "rgba(255,255,255,0.12)"
         : "rgba(255,255,255,0.85)",
@@ -949,7 +949,7 @@ export default function VerseDetails() {
                     isFavorite
                       ? "bg-[#C41E3A]/10 border-[#C41E3A]"
                       : isDarkMode
-                        ? "border-[#4A4458]"
+                        ? "border-[#1A3550]"
                         : "border-[#E8D5C4]"
                   }`}
                 >
@@ -991,7 +991,7 @@ export default function VerseDetails() {
                     isRead
                       ? "bg-[#5BB974]/10 border-[#5BB974]"
                       : isDarkMode
-                        ? "border-[#4A4458]"
+                        ? "border-[#1A3550]"
                         : "border-[#E8D5C4]"
                   }`}
                 >

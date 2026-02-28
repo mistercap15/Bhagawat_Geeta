@@ -46,11 +46,11 @@ export default function SituationDetailScreen() {
   const [shuffleKey, setShuffleKey] = useState(0); // bumped to re-animate on shuffle
 
   const c = {
-    bg: isDarkMode ? "#1C1B1F" : "#FFF8F1",
-    card: isDarkMode ? "#2B2930" : "#FFFDF9",
-    text: isDarkMode ? "#E8DEF8" : "#3E2723",
-    sub: isDarkMode ? "#CAC4D0" : "#625B71",
-    border: isDarkMode ? "#4A4458" : "#E8D5C4",
+    bg: isDarkMode ? "#040C18" : "#FFF3DC",
+    card: isDarkMode ? "#081C30" : "#FFFDF8",
+    text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+    sub: isDarkMode ? "#8AACC8" : "#7A5230",
+    border: isDarkMode ? "#1A3550" : "#F0D080",
   };
 
   // Fetch verse data whenever selected indices change
@@ -135,7 +135,7 @@ export default function SituationDetailScreen() {
   if (initialLoading || !situation) {
     return (
       <LinearGradient
-        colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+        colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
         style={styles.center}
       >
         <ActivityIndicator size="large" color="#A855F7" />
@@ -156,7 +156,7 @@ export default function SituationDetailScreen() {
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -298,7 +298,7 @@ export default function SituationDetailScreen() {
                           styles.contextBlock,
                           {
                             backgroundColor: isDarkMode
-                              ? "#1C1B1F"
+                              ? "#040C18"
                               : "#F5F0EC",
                             borderLeftColor: situation.color,
                           },

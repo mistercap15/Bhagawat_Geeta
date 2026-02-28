@@ -62,7 +62,7 @@ function LayoutContent() {
             headerShown: false,
             tabBarHideOnKeyboard: true,
             tabBarActiveTintColor: isDarkMode ? "#FFB59D" : "#8A4D24",
-            tabBarInactiveTintColor: isDarkMode ? "#B8B2C1" : "#9A8F86",
+            tabBarInactiveTintColor: isDarkMode ? "#4A7BA0" : "#9A8F86",
             tabBarLabelStyle: {
               fontSize: 11,
               fontWeight: "600",
@@ -79,8 +79,8 @@ function LayoutContent() {
               paddingBottom: insets.bottom,
               borderRadius: 32,
               backgroundColor: isDarkMode
-                ? "rgba(43, 41, 48, 0.95)"
-                : "rgba(255, 253, 249, 0.95)",
+                ? "rgba(8, 28, 48, 0.97)"
+                : "rgba(255, 243, 220, 0.97)",
               borderTopWidth: 0,
               elevation: 4,
               shadowColor: "#000",

@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ScrollView,
@@ -16,6 +16,7 @@ import {
   Flame,
   Target,
   CheckCircle,
+  ChevronLeft,
   Trophy,
   BookOpen,
   Minus,
@@ -79,7 +80,7 @@ function CircularProgress({
   isDarkMode: boolean;
 }) {
   const offset = CIRCUM - (percent / 100) * CIRCUM;
-  const trackColor = isDarkMode ? "#3A3444" : "#F0E8E0";
+  const trackColor = isDarkMode ? "#0D2540" : "#F0E8E0";
   const progressStart = isComplete ? "#22C55E" : "#D97706";
   const progressEnd = isComplete ? "#16A34A" : "#8A4D24";
 
@@ -145,7 +146,7 @@ function CircularProgress({
               </Text>
               <Text
                 style={{
-                  color: isDarkMode ? "#CAC4D0" : "#625B71",
+                  color: isDarkMode ? "#8AACC8" : "#7A5230",
                   fontSize: 11,
                   marginTop: 2,
                 }}
@@ -295,7 +296,7 @@ function TargetSlider({
           style={[
             sliderStyles.stepButton,
             {
-              backgroundColor: isDarkMode ? "#3A3444" : "#F3EDF7",
+              backgroundColor: isDarkMode ? "#0D2540" : "#F3EDF7",
               borderColor: palette.border,
               opacity: value <= MIN_TARGET ? 0.4 : 1,
             },
@@ -320,7 +321,7 @@ function TargetSlider({
           style={[
             sliderStyles.stepButton,
             {
-              backgroundColor: isDarkMode ? "#3A3444" : "#F3EDF7",
+              backgroundColor: isDarkMode ? "#0D2540" : "#F3EDF7",
               borderColor: palette.border,
               opacity: value >= MAX_TARGET ? 0.4 : 1,
             },
@@ -340,7 +341,7 @@ function TargetSlider({
           style={[
             sliderStyles.track,
             {
-              backgroundColor: isDarkMode ? "#3A3444" : "#F0E8E0",
+              backgroundColor: isDarkMode ? "#0D2540" : "#F0E8E0",
             },
           ]}
         >
@@ -381,7 +382,7 @@ function TargetSlider({
               style={[
                 sliderStyles.thumb,
                 {
-                  backgroundColor: isDarkMode ? "#2B2930" : "#FFFDF9",
+                  backgroundColor: isDarkMode ? "#081C30" : "#FFFDF8",
                   borderColor: palette.accent,
                   shadowColor: palette.accent,
                 },
@@ -423,7 +424,7 @@ function TargetSlider({
                       t <= value
                         ? palette.accent
                         : isDarkMode
-                          ? "#4A4458"
+                          ? "#1A3550"
                           : "#D4C4B0",
                   },
                 ]}
@@ -553,6 +554,7 @@ const sliderStyles = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function DailyPracticeScreen() {
+  const router = useRouter();
   const { isDarkMode } = useTheme();
   const t = useTranslation();
   const [todayCount, setTodayCount] = useState(0);
@@ -564,13 +566,13 @@ export default function DailyPracticeScreen() {
 
   const p = useMemo(
     () => ({
-      bg: isDarkMode ? "#1C1B1F" : "#FFF8F1",
-      card: isDarkMode ? "#2B2930" : "#FFFDF9",
-      text: isDarkMode ? "#F3EDF7" : "#3E2723",
-      sub: isDarkMode ? "#CAC4D0" : "#625B71",
-      border: isDarkMode ? "#4A4458" : "#E8D5C4",
+      bg: isDarkMode ? "#040C18" : "#FFF3DC",
+      card: isDarkMode ? "#081C30" : "#FFFDF8",
+      text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+      sub: isDarkMode ? "#8AACC8" : "#7A5230",
+      border: isDarkMode ? "#1A3550" : "#F0D080",
       accent: "#8A4D24",
-      iconBg: isDarkMode ? "#3A3444" : "#FFF1E6",
+      iconBg: isDarkMode ? "#0D2540" : "#FFF1E6",
     }),
     [isDarkMode],
   );
@@ -632,7 +634,7 @@ export default function DailyPracticeScreen() {
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFF3E8"]}
+      colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -641,6 +643,9 @@ export default function DailyPracticeScreen() {
       >
         {/* ── Page header ── */}
         <View style={styles.pageHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <ChevronLeft size={22} color={p.text} />
+          </TouchableOpacity>
           <View style={[styles.pageIconWrap, { backgroundColor: p.iconBg }]}>
             <BookOpen size={22} color={p.accent} />
           </View>
@@ -770,7 +775,7 @@ export default function DailyPracticeScreen() {
                           ? "#22C55E25"
                           : "#DCFCE7"
                         : isDarkMode
-                          ? "#3A3444"
+                          ? "#0D2540"
                           : "#F3EDF7",
                       borderColor: d.met ? "#22C55E" : p.border,
                     },
@@ -847,6 +852,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 20,
   },
+  backBtn: { width: 38, height: 38, justifyContent: "center", alignItems: "center" },
   pageIconWrap: {
     width: 44,
     height: 44,

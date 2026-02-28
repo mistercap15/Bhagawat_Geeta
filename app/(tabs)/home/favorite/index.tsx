@@ -7,7 +7,7 @@ import { useTranslation } from "@/utils/translations";
 import { getSlok } from "@/utils/gitaData";
 import MaterialLoader from "@/components/MaterialLoader";
 import { LinearGradient } from "expo-linear-gradient";
-import { Heart, ChevronRight } from "lucide-react-native";
+import { Heart, ChevronLeft, ChevronRight } from "lucide-react-native";
 import chaptersData from "@/data/gita.json";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
@@ -19,10 +19,10 @@ export default function FavoritesScreen() {
   const t = useTranslation();
 
   const c = {
-    text: isDarkMode ? "#E8DEF8" : "#3E2723",
-    sub: isDarkMode ? "#CAC4D0" : "#625B71",
-    card: isDarkMode ? "#2B2930" : "#FFFDF9",
-    border: isDarkMode ? "#4A4458" : "#E8D5C4",
+    text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+    sub: isDarkMode ? "#8AACC8" : "#7A5230",
+    card: isDarkMode ? "#081C30" : "#FFFDF8",
+    border: isDarkMode ? "#1A3550" : "#F0D080",
   };
 
   const { chapters } = chaptersData as any;
@@ -61,7 +61,7 @@ export default function FavoritesScreen() {
   if (loading) {
     return (
       <LinearGradient
-        colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+        colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
         style={styles.center}
       >
         <MaterialLoader size="large" />
@@ -73,12 +73,12 @@ export default function FavoritesScreen() {
   if (favorites.length === 0) {
     return (
       <LinearGradient
-        colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+        colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
         style={styles.emptyContainer}
       >
         <Animated.View entering={FadeInDown.duration(500)} style={styles.emptyContent}>
-          <View style={[styles.emptyIcon, { backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6" }]}>
-            <Heart size={38} color={isDarkMode ? "#D0BCFF" : "#8A4D24"} />
+          <View style={[styles.emptyIcon, { backgroundColor: isDarkMode ? "#0D2540" : "#FFF1E6" }]}>
+            <Heart size={38} color={isDarkMode ? "#FFB347" : "#8A4D24"} />
           </View>
           <Text style={[styles.emptyTitle, { color: c.text }]}>{t.noFavoritesTitle}</Text>
           <Text style={[styles.emptySub, { color: c.sub }]}>
@@ -91,7 +91,7 @@ export default function FavoritesScreen() {
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -102,6 +102,9 @@ export default function FavoritesScreen() {
       >
         {/* Page header */}
         <View style={styles.pageHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <ChevronLeft size={22} color={c.text} />
+          </TouchableOpacity>
           <View style={styles.headerIconWrap}>
             <Heart size={18} color="#C41E3A" fill="#C41E3A" />
           </View>
@@ -188,6 +191,7 @@ const styles = StyleSheet.create({
   scroll: { padding: 20, paddingBottom: 110 },
 
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 6, marginTop: 4 },
+  backBtn: { width: 38, height: 38, justifyContent: "center", alignItems: "center" },
   headerIconWrap: {
     width: 40,
     height: 40,

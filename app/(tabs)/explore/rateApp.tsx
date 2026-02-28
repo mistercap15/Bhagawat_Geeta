@@ -1,9 +1,10 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Linking, ScrollView, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
-import { Star, CheckCircle } from "lucide-react-native";
+import { Star, CheckCircle, ChevronLeft } from "lucide-react-native";
 
 const FEATURES = {
   en: [
@@ -23,26 +24,32 @@ const FEATURES = {
 };
 
 const RateApp = () => {
+  const router = useRouter();
   const { isDarkMode } = useTheme();
   const t = useTranslation();
   const isHindi = t.meaningKey === "hi";
 
   const c = {
-    text: isDarkMode ? "#E8DEF8" : "#3E2723",
-    sub: isDarkMode ? "#CAC4D0" : "#625B71",
-    card: isDarkMode ? "#2B2930" : "#FFFDF9",
-    border: isDarkMode ? "#4A4458" : "#E8D5C4",
+    text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+    sub: isDarkMode ? "#8AACC8" : "#7A5230",
+    card: isDarkMode ? "#081C30" : "#FFFDF8",
+    border: isDarkMode ? "#1A3550" : "#F0D080",
   };
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
       style={{ flex: 1 }}
     >
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
+        {/* Back button */}
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <ChevronLeft size={22} color={c.text} />
+        </TouchableOpacity>
+
         {/* Hero */}
         <View style={styles.hero}>
           <View style={styles.starsRow}>
@@ -102,6 +109,7 @@ export default RateApp;
 
 const styles = StyleSheet.create({
   scroll: { padding: 24, paddingBottom: 60 },
+  backBtn: { width: 38, height: 38, justifyContent: "center", alignItems: "center", marginBottom: 8, marginLeft: -4 },
 
   hero: { alignItems: "center", marginBottom: 28, marginTop: 10 },
   starsRow: { flexDirection: "row", gap: 6, marginBottom: 18 },

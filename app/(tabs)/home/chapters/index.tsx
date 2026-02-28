@@ -7,7 +7,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialLoader from "@/components/MaterialLoader";
-import { ChevronRight } from "lucide-react-native";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 // Each chapter gets a distinct accent colour for its badge + progress bar
@@ -26,11 +26,11 @@ export default function ChaptersScreen() {
   const t = useTranslation();
 
   const c = {
-    text: isDarkMode ? "#E8DEF8" : "#3E2723",
-    sub: isDarkMode ? "#CAC4D0" : "#625B71",
-    card: isDarkMode ? "#2B2930" : "#FFFDF9",
-    border: isDarkMode ? "#4A4458" : "#E8D5C4",
-    track: isDarkMode ? "#3A3444" : "#F0E8E0",
+    text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+    sub: isDarkMode ? "#8AACC8" : "#7A5230",
+    card: isDarkMode ? "#081C30" : "#FFFDF8",
+    border: isDarkMode ? "#1A3550" : "#F0D080",
+    track: isDarkMode ? "#0D2540" : "#F0E8E0",
   };
 
   const fetchChapters = async () => {
@@ -58,7 +58,7 @@ export default function ChaptersScreen() {
   if (loading) {
     return (
       <LinearGradient
-        colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+        colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
         style={styles.center}
       >
         <MaterialLoader size="large" />
@@ -71,7 +71,7 @@ export default function ChaptersScreen() {
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -83,10 +83,15 @@ export default function ChaptersScreen() {
       >
         {/* Page header */}
         <View style={styles.pageHeader}>
-          <Text style={[styles.pageTitle, { color: c.text }]}>{t.allChapters}</Text>
-          <Text style={[styles.pageSub, { color: c.sub }]}>
-            {t.chaptersSubHeader(totalRead)}
-          </Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <ChevronLeft size={22} color={c.text} />
+          </TouchableOpacity>
+          <View>
+            <Text style={[styles.pageTitle, { color: c.text }]}>{t.allChapters}</Text>
+            <Text style={[styles.pageSub, { color: c.sub }]}>
+              {t.chaptersSubHeader(totalRead)}
+            </Text>
+          </View>
         </View>
 
         {chapters.map((chapter, index) => {
@@ -108,7 +113,7 @@ export default function ChaptersScreen() {
                   {
                     backgroundColor: c.card,
                     borderColor: c.border,
-                    shadowOpacity: isDarkMode ? 0.3 : 0.07,
+                    shadowOpacity: isDarkMode ? 0.4 : 0.08,
                   },
                 ]}
               >
@@ -194,7 +199,8 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 14 },
   scroll: { padding: 20, paddingBottom: 110 },
 
-  pageHeader: { marginBottom: 20, marginTop: 4 },
+  pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20, marginTop: 4 },
+  backBtn: { width: 38, height: 38, justifyContent: "center", alignItems: "center" },
   pageTitle: { fontSize: 28, fontWeight: "800" },
   pageSub: { fontSize: 13, marginTop: 3 },
 

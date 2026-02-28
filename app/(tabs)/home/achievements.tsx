@@ -49,10 +49,10 @@ function StatCard({
   isDarkMode: boolean;
 }) {
   const c = {
-    card: isDarkMode ? "#2B2930" : "#FFFDF9",
-    border: isDarkMode ? "#4A4458" : "#E8D5C4",
-    text: isDarkMode ? "#E8DEF8" : "#3E2723",
-    sub: isDarkMode ? "#CAC4D0" : "#625B71",
+    card: isDarkMode ? "#081C30" : "#FFFDF8",
+    border: isDarkMode ? "#1A3550" : "#F0D080",
+    text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+    sub: isDarkMode ? "#8AACC8" : "#7A5230",
   };
   return (
     <View
@@ -83,10 +83,10 @@ function BadgeTile({
   isDarkMode: boolean;
   language: "en" | "hi";
 }) {
-  const card = isDarkMode ? "#2B2930" : "#FFFDF9";
-  const border = isDarkMode ? "#4A4458" : "#E8D5C4";
-  const text = isDarkMode ? "#E8DEF8" : "#3E2723";
-  const sub = isDarkMode ? "#CAC4D0" : "#625B71";
+  const card = isDarkMode ? "#081C30" : "#FFFDF8";
+  const border = isDarkMode ? "#1A3550" : "#F0D080";
+  const text = isDarkMode ? "#E8F2FF" : "#1A0A00";
+  const sub = isDarkMode ? "#8AACC8" : "#7A5230";
   const title = language === "hi" ? achievement.titleHi : achievement.title;
   const desc = language === "hi" ? achievement.descriptionHi : achievement.description;
 
@@ -95,7 +95,7 @@ function BadgeTile({
       style={[
         styles.badge,
         {
-          backgroundColor: unlocked ? card : isDarkMode ? "#1E1C22" : "#F5F0EC",
+          backgroundColor: unlocked ? card : isDarkMode ? "#050F1F" : "#F5F0EC",
           borderColor: unlocked ? "#D97706" : border,
           borderWidth: unlocked ? 1.5 : 1,
           opacity: unlocked ? 1 : 0.5,
@@ -192,16 +192,16 @@ export default function AchievementsScreen() {
   const rankProgress = getRankProgress(totalVersesRead);
 
   const c = {
-    bg: isDarkMode ? "#1C1B1F" : "#FFF8F1",
-    card: isDarkMode ? "#2B2930" : "#FFFDF9",
-    text: isDarkMode ? "#E8DEF8" : "#3E2723",
-    sub: isDarkMode ? "#CAC4D0" : "#625B71",
-    border: isDarkMode ? "#4A4458" : "#E8D5C4",
+    bg: isDarkMode ? "#040C18" : "#FFF3DC",
+    card: isDarkMode ? "#081C30" : "#FFFDF8",
+    text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+    sub: isDarkMode ? "#8AACC8" : "#7A5230",
+    border: isDarkMode ? "#1A3550" : "#F0D080",
   };
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -228,7 +228,7 @@ export default function AchievementsScreen() {
         {/* ── Rank Card ── */}
         <Animated.View entering={FadeInDown.duration(400).delay(60)}>
           <LinearGradient
-            colors={isDarkMode ? ["#3A2E1E", "#2B2930"] : ["#FFF1E6", "#FFFDF9"]}
+            colors={isDarkMode ? ["#1A1000", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
             style={[styles.rankCard, { borderColor: "#D97706" + "55" }]}
           >
             <LinearGradient
@@ -285,7 +285,7 @@ export default function AchievementsScreen() {
                     {language === "hi" ? "और श्लोक" : "verses to go"}
                   </Text>
                 </View>
-                <View style={[styles.rankTrack, { backgroundColor: isDarkMode ? "#3A3444" : "#F0E8E0" }]}>
+                <View style={[styles.rankTrack, { backgroundColor: isDarkMode ? "#0D2540" : "#F0E8E0" }]}>
                   <LinearGradient
                     colors={["#8A4D24", "#D97706", "#F59E0B"]}
                     start={{ x: 0, y: 0 }}
@@ -358,7 +358,7 @@ export default function AchievementsScreen() {
                     {language === "hi" ? meta.labelHi : meta.label}
                   </Text>
                 </View>
-                <View style={[styles.categoryBadgeCount, { backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6" }]}>
+                <View style={[styles.categoryBadgeCount, { backgroundColor: isDarkMode ? "#0D2540" : "#FFF1E6" }]}>
                   <Text style={[styles.categoryBadgeCountText, { color: "#D97706" }]}>
                     {catUnlocked}/{achievements.length}
                   </Text>
@@ -398,7 +398,7 @@ export default function AchievementsScreen() {
                   {language === "hi" ? "सहेजा गया मार्गदर्शन" : "Saved Guidance"}
                 </Text>
               </View>
-              <View style={[styles.categoryBadgeCount, { backgroundColor: isDarkMode ? "#3A3444" : "#FAF5FF" }]}>
+              <View style={[styles.categoryBadgeCount, { backgroundColor: isDarkMode ? "#0D2540" : "#FAF5FF" }]}>
                 <Text style={[styles.categoryBadgeCountText, { color: "#A855F7" }]}>
                   {savedGuidance.length}
                 </Text>
@@ -445,7 +445,7 @@ export default function AchievementsScreen() {
                     style={[
                       styles.guidanceRemoveBtn,
                       {
-                        backgroundColor: isDarkMode ? "#3A3444" : "#F5F0EC",
+                        backgroundColor: isDarkMode ? "#0D2540" : "#F5F0EC",
                       },
                     ]}
                   >

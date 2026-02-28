@@ -5,7 +5,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
-import { BookOpen, ChevronRight, Clock, BookMarked } from "lucide-react-native";
+import { BookOpen, ChevronLeft, ChevronRight, Clock, BookMarked } from "lucide-react-native";
 import MaterialLoader from "@/components/MaterialLoader";
 import { getChapter } from "@/utils/gitaData";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -31,10 +31,10 @@ export default function ContinueReadingScreen() {
   const t = useTranslation();
 
   const c = {
-    text: isDarkMode ? "#E8DEF8" : "#3E2723",
-    sub: isDarkMode ? "#CAC4D0" : "#625B71",
-    card: isDarkMode ? "#2B2930" : "#FFFDF9",
-    border: isDarkMode ? "#4A4458" : "#E8D5C4",
+    text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+    sub: isDarkMode ? "#8AACC8" : "#7A5230",
+    card: isDarkMode ? "#081C30" : "#FFFDF8",
+    border: isDarkMode ? "#1A3550" : "#F0D080",
   };
 
   useFocusEffect(
@@ -62,7 +62,7 @@ export default function ContinueReadingScreen() {
   if (loading) {
     return (
       <LinearGradient
-        colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+        colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
         style={styles.center}
       >
         <MaterialLoader size="large" />
@@ -72,7 +72,7 @@ export default function ContinueReadingScreen() {
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -81,8 +81,11 @@ export default function ContinueReadingScreen() {
       >
         {/* Page header */}
         <View style={styles.pageHeader}>
-          <View style={[styles.headerIconWrap, { backgroundColor: "#3B82F620" }]}>
-            <BookMarked size={18} color="#3B82F6" />
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <ChevronLeft size={22} color={c.text} />
+          </TouchableOpacity>
+          <View style={[styles.headerIconWrap, { backgroundColor: "#D9770622" }]}>
+            <BookMarked size={18} color="#D97706" />
           </View>
           <Text style={[styles.pageTitle, { color: c.text }]}>{t.continueReadingTitle}</Text>
         </View>
@@ -91,8 +94,8 @@ export default function ContinueReadingScreen() {
 
         {!lastRead ? (
           <Animated.View entering={FadeInDown.duration(500)} style={styles.emptyWrap}>
-            <View style={[styles.emptyIcon, { backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6" }]}>
-              <BookOpen size={38} color={isDarkMode ? "#D0BCFF" : "#8A4D24"} />
+            <View style={[styles.emptyIcon, { backgroundColor: isDarkMode ? "#0D2540" : "#FFF1E6" }]}>
+              <BookOpen size={38} color={isDarkMode ? "#FFB347" : "#8A4D24"} />
             </View>
             <Text style={[styles.emptyTitle, { color: c.text }]}>{t.noReadingHistory}</Text>
             <Text style={[styles.emptySub, { color: c.sub }]}>
@@ -135,7 +138,7 @@ export default function ContinueReadingScreen() {
               <View style={styles.resumeCardInner}>
                 {/* Chapter info row */}
                 <View style={styles.chapterRow}>
-                  <View style={[styles.bookIconWrap, { backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6" }]}>
+                  <View style={[styles.bookIconWrap, { backgroundColor: isDarkMode ? "#0D2540" : "#FFF1E6" }]}>
                     <BookOpen size={24} color="#8A4D24" />
                   </View>
                   <View style={{ flex: 1 }}>
@@ -153,7 +156,7 @@ export default function ContinueReadingScreen() {
                 </View>
 
                 {/* Resume info pill */}
-                <View style={[styles.resumePill, { backgroundColor: isDarkMode ? "#3A3444" : "#FFF8F1" }]}>
+                <View style={[styles.resumePill, { backgroundColor: isDarkMode ? "#0D2540" : "#FFF3DC" }]}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.resumeLabel, { color: c.sub }]}>{t.resumeFrom}</Text>
                     <Text style={[styles.resumeVerse, { color: c.text }]}>
@@ -185,6 +188,7 @@ const styles = StyleSheet.create({
   scroll: { padding: 20, paddingBottom: 110 },
 
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 6, marginTop: 4 },
+  backBtn: { width: 38, height: 38, justifyContent: "center", alignItems: "center" },
   headerIconWrap: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
   pageTitle: { fontSize: 22, fontWeight: "800" },
   divider: { height: 1, marginVertical: 16 },

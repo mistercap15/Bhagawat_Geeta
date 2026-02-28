@@ -91,12 +91,12 @@ const Explore = () => {
   const sheetRef = useRef<BottomSheetModal>(null);
 
   const c = {
-    text: isDarkMode ? "#E8DEF8" : "#3E2723",
-    sub: isDarkMode ? "#CAC4D0" : "#625B71",
-    card: isDarkMode ? "#2B2930" : "#FFFDF9",
-    border: isDarkMode ? "#4A4458" : "#E8D5C4",
-    sheetBg: isDarkMode ? "#2B2930" : "#FFFFFF",
-    handleColor: isDarkMode ? "#4A4458" : "#D9D0C7",
+    text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+    sub: isDarkMode ? "#8AACC8" : "#7A5230",
+    card: isDarkMode ? "#081C30" : "#FFFDF8",
+    border: isDarkMode ? "#1A3550" : "#F0D080",
+    sheetBg: isDarkMode ? "#081C30" : "#FFFDF8",
+    handleColor: isDarkMode ? "#1A3550" : "#D9D0C7",
   };
 
   const openSheet = useCallback(() => sheetRef.current?.present(), []);
@@ -120,7 +120,7 @@ const Explore = () => {
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
       <LinearGradient
-        colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+        colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
         style={{ flex: 1 }}
       >
         <ScrollView
@@ -146,7 +146,7 @@ const Explore = () => {
                 value={isDarkMode}
                 onValueChange={toggleTheme}
                 thumbColor={isDarkMode ? "#FFB59D" : "#8A4D24"}
-                trackColor={{ false: "#E8D5C4", true: "#4A4458" }}
+                trackColor={{ false: "#F0D080", true: "#1A3550" }}
               />
             </View>
 
@@ -164,7 +164,7 @@ const Explore = () => {
                 <Text style={[styles.menuSub, { color: c.sub }]}>{t.languageSectionSub}</Text>
               </View>
               {/* Active language pill */}
-              <View style={[styles.activePill, { backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6" }]}>
+              <View style={[styles.activePill, { backgroundColor: isDarkMode ? "#0D2540" : "#FFF1E6" }]}>
                 <Text style={styles.activePillFlag}>{currentLangOption.flag}</Text>
                 <Text style={[styles.activePillText, { color: isDarkMode ? "#FFB59D" : "#8A4D24" }]}>
                   {currentLangOption.name}
@@ -262,7 +262,7 @@ const Explore = () => {
           <TouchableOpacity
             onPress={closeSheet}
             activeOpacity={0.7}
-            style={[styles.closeBtn, { backgroundColor: isDarkMode ? "#3A3444" : "#F5EDE5" }]}
+            style={[styles.closeBtn, { backgroundColor: isDarkMode ? "#0D2540" : "#F5EDE5" }]}
           >
             <X size={18} color={c.sub} />
           </TouchableOpacity>
@@ -323,7 +323,7 @@ const Explore = () => {
                       style={[
                         styles.optionCard,
                         styles.optionCardInactive,
-                        { backgroundColor: isDarkMode ? "#3A3444" : "#FAF6F2", borderColor: c.border },
+                        { backgroundColor: isDarkMode ? "#0D2540" : "#FAF6F2", borderColor: c.border },
                       ]}
                     >
                       <Text style={styles.optionFlag}>{flag}</Text>

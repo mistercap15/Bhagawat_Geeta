@@ -5,9 +5,9 @@ import { View } from "react-native";
 export default function ExploreLayout() {
   const { isDarkMode } = useTheme();
 
-  const headerBg = isDarkMode ? "#2B2930" : "#FFFDF9";
+  const headerBg = isDarkMode ? "#081C30" : "#FFFDF8";
   const headerText = isDarkMode ? "#FFB59D" : "#8A4D24";
-  const themeBg = isDarkMode ? "#1C1B1F" : "#FFF8F1";
+  const themeBg = isDarkMode ? "#040C18" : "#FFF3DC";
 
   return (
     <View style={{ flex: 1, backgroundColor: themeBg }}>

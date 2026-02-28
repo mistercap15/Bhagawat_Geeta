@@ -13,31 +13,37 @@ interface ThemedLayoutProps {
 export default function ThemedLayout({ children }: ThemedLayoutProps) {
   const { isDarkMode } = useTheme();
 
-  const bgColor = isDarkMode ? "#1C1B1F" : "#FFF8F1";
+  const topBg = isDarkMode ? "#040C18" : "#FFF3DC";
+  const bottomBg = isDarkMode ? "#081C30" : "#FFE8B0";
   const statusStyle = isDarkMode ? "light" : "dark";
 
   useEffect(() => {
     // App background (used for splash + system surfaces)
-    SystemUI.setBackgroundColorAsync(bgColor).catch(() => undefined);
+    SystemUI.setBackgroundColorAsync(topBg).catch(() => undefined);
 
-    // Android bottom navigation bar
+    // Android bottom navigation bar — match gradient bottom
     if (Platform.OS === "android") {
-      NavigationBar.setBackgroundColorAsync(bgColor);
+      NavigationBar.setBackgroundColorAsync(bottomBg);
       NavigationBar.setButtonStyleAsync(isDarkMode ? "light" : "dark");
     }
-  }, [bgColor, isDarkMode]);
+  }, [topBg, bottomBg, isDarkMode]);
 
   return (
-   <SafeAreaView
-  style={{ flex: 1, backgroundColor: bgColor }}
-  edges={["top", "bottom"]}
->
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: topBg }}
+      edges={["top"]}
+    >
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: bottomBg }}
+        edges={["bottom"]}
+      >
       <StatusBar
         style={statusStyle}
-        backgroundColor={bgColor}
+        backgroundColor={topBg}
         translucent={false}
       />
       {children}
+      </SafeAreaView>
     </SafeAreaView>
   );
 }

@@ -1,9 +1,10 @@
 import React from "react";
-import { Text, ScrollView, View, StyleSheet } from "react-native";
+import { Text, ScrollView, View, TouchableOpacity, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
-import { Shield } from "lucide-react-native";
+import { Shield, ChevronLeft } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const SECTIONS = [
@@ -28,22 +29,23 @@ const SECTIONS = [
 const TAB_BAR_HEIGHT = 62;
 
 const PrivacyPolicy = () => {
+  const router = useRouter();
   const { isDarkMode } = useTheme();
   const t = useTranslation();
   const insets = useSafeAreaInsets();
 
   const c = {
-    text: isDarkMode ? "#E8DEF8" : "#3E2723",
-    sub: isDarkMode ? "#CAC4D0" : "#625B71",
-    card: isDarkMode ? "#2B2930" : "#FFFDF9",
-    border: isDarkMode ? "#4A4458" : "#E8D5C4",
+    text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+    sub: isDarkMode ? "#8AACC8" : "#7A5230",
+    card: isDarkMode ? "#081C30" : "#FFFDF8",
+    border: isDarkMode ? "#1A3550" : "#F0D080",
   };
 
   const isHindi = t.meaningKey === "hi";
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -55,6 +57,9 @@ const PrivacyPolicy = () => {
       >
         {/* Header */}
         <View style={styles.pageHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <ChevronLeft size={22} color={c.text} />
+          </TouchableOpacity>
           <View style={[styles.headerIcon, { backgroundColor: "#22C55E20" }]}>
             <Shield size={20} color="#22C55E" />
           </View>
@@ -98,6 +103,7 @@ export default PrivacyPolicy;
 const styles = StyleSheet.create({
   container: { padding: 24 },
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4, marginBottom: 6 },
+  backBtn: { width: 38, height: 38, justifyContent: "center", alignItems: "center" },
   headerIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
   pageTitle: { fontSize: 22, fontWeight: "800" },
   pageSub: { fontSize: 12, marginTop: 2 },

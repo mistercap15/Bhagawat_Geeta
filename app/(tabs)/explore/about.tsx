@@ -1,4 +1,5 @@
 import React, { useRef, useCallback, useMemo } from "react";
+import { useRouter } from "expo-router";
 import {
   Text,
   TouchableOpacity,
@@ -12,7 +13,7 @@ import {
 import { useTheme } from "@/context/ThemeContext";
 import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
-import { Code2, Heart, Download, IndianRupee, X } from "lucide-react-native";
+import { Code2, Heart, Download, IndianRupee, X, ChevronLeft } from "lucide-react-native";
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
@@ -30,6 +31,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const QR_SIZE = SCREEN_WIDTH * 0.6;
 const TAB_BAR_HEIGHT = 62;
 const About = () => {
+  const router = useRouter();
   const { isDarkMode } = useTheme();
   const t = useTranslation();
   const insets = useSafeAreaInsets();
@@ -37,12 +39,12 @@ const About = () => {
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
   const c = {
-    text: isDarkMode ? "#E8DEF8" : "#3E2723",
-    sub: isDarkMode ? "#CAC4D0" : "#625B71",
-    card: isDarkMode ? "#2B2930" : "#FFFDF9",
-    border: isDarkMode ? "#4A4458" : "#E8D5C4",
-    sheetBg: isDarkMode ? "#2B2930" : "#FFFFFF",
-    handleColor: isDarkMode ? "#4A4458" : "#D9D0C7",
+    text: isDarkMode ? "#E8F2FF" : "#1A0A00",
+    sub: isDarkMode ? "#8AACC8" : "#7A5230",
+    card: isDarkMode ? "#081C30" : "#FFFDF8",
+    border: isDarkMode ? "#1A3550" : "#F0D080",
+    sheetBg: isDarkMode ? "#081C30" : "#FFFDF8",
+    handleColor: isDarkMode ? "#1A3550" : "#E0C060",
   };
 
   const openSheet = useCallback(() => {
@@ -108,7 +110,7 @@ const About = () => {
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#1C1B1F", "#2B2930"] : ["#FFF8F1", "#FFEAD7"]}
+      colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -118,6 +120,11 @@ const About = () => {
           { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 40 },
         ]}
       >
+        {/* Back button */}
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <ChevronLeft size={22} color={c.text} />
+        </TouchableOpacity>
+
         {/* Developer avatar */}
         <View style={styles.avatarWrap}>
           <LinearGradient
@@ -223,7 +230,7 @@ const About = () => {
             onPress={closeSheet}
             style={[
               styles.closeBtn,
-              { backgroundColor: isDarkMode ? "#3A3444" : "#F5EDE5" },
+              { backgroundColor: isDarkMode ? "#0D2540" : "#F5EDE5" },
             ]}
             activeOpacity={0.7}
           >
@@ -256,7 +263,7 @@ const About = () => {
             style={[
               styles.actionBtn,
               {
-                backgroundColor: isDarkMode ? "#3A3444" : "#FFF1E6",
+                backgroundColor: isDarkMode ? "#0D2540" : "#FFF1E6",
                 borderColor: c.border,
               },
             ]}
@@ -288,6 +295,7 @@ export default About;
 const styles = StyleSheet.create({
   scroll: { padding: 24, paddingBottom: 60 },
   container: { padding: 24 },
+  backBtn: { width: 38, height: 38, justifyContent: "center", alignItems: "center", marginBottom: 8, marginLeft: -4 },
   avatarWrap: { alignItems: "center", marginBottom: 28, marginTop: 10 },
   avatarCircle: {
     width: 82,
