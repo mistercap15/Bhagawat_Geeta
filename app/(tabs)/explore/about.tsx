@@ -37,7 +37,7 @@ const About = () => {
   const insets = useSafeAreaInsets();
   const isHindi = t.meaningKey === "hi";
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-
+  
   const c = {
     text: isDarkMode ? "#E8F2FF" : "#1A0A00",
     sub: isDarkMode ? "#8AACC8" : "#7A5230",
