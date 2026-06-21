@@ -1,50 +1,135 @@
-# Welcome to your Expo app 👋
+# 🕉️ Bhagavad Gita
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A calm, ad‑free, offline‑first mobile app to read and reflect on the **Bhagavad Gita** — every chapter and shloka with Sanskrit, Hindi, and English, wrapped in a Material 3 reading experience with a realistic page‑turn animation.
 
-## Get started
+Built with **React Native + Expo (SDK 54)** and a fully bilingual (English / हिंदी) interface.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## ✨ Features
 
-2. Start the app
+- 📖 **Complete scripture** — all 18 chapters and 700 shlokas with the Sanskrit verse plus Hindi & English translations.
+- 📜 **Realistic page‑turn reader** — swipe between verses with a paper‑curl animation and haptic feedback.
+- 🌐 **Bilingual UI** — switch the entire interface between English and हिंदी; your choice is saved automatically.
+- 🌗 **Light & Dark mode** — a Material 3 Expressive theme built on a saffron color palette.
+- ❤️ **Favorites & reading progress** — mark verses as read and favorite them; chapters show a 👑 when fully read.
+- 🎯 **Daily practice** — set a daily reading goal and get a reminder notification.
+- 🏆 **Achievements & ranks** — 23 unlockable badges, rank levels, and stats with celebration animations.
+- 🔖 **Continue reading** — jump straight back to the last verse you read.
+- 🧭 **Guidance by situation** — find relevant verses for what you're going through.
+- 🔊 **Audio recitation** — listen along while you read.
+- 📤 **Share verses** — export a beautifully formatted verse as an image.
+- 📴 **Offline‑first** — all scripture is bundled; no network required.
 
-   ```bash
-    npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## 🛠️ Tech Stack
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+| Area | Technology |
+| --- | --- |
+| Framework | [Expo](https://expo.dev) SDK 54, React Native 0.81, React 19 |
+| Navigation | [Expo Router](https://docs.expo.dev/router/introduction) 6 (file‑based routing) |
+| Language | TypeScript |
+| Styling | [NativeWind](https://www.nativewind.dev/) 4 (Tailwind CSS) + custom Material 3 theme |
+| Animations | [React Native Reanimated](https://docs.swmansion.com/react-native-reanimated/) 4 + [Gesture Handler](https://docs.swmansion.com/react-native-gesture-handler/) |
+| State & storage | React Context API + AsyncStorage |
+| UX extras | expo‑notifications, expo‑haptics, expo‑linear‑gradient, lucide‑react‑native, react‑native‑view‑shot |
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+> Uses the React Native **New Architecture** (Fabric).
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Node.js 20.19+**
+- A package manager (`npm`)
+- For Android: **Android Studio** with an emulator (or a physical device)
+- For iOS: **Xcode** with a simulator (macOS only)
+
+> This app uses native modules (Reanimated 4, notifications, etc.) and the New Architecture, so it runs in a **custom development build**, not Expo Go.
+
+### 1. Install dependencies
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Run on a device / emulator
 
-## Learn more
+```bash
+# Android (builds the native app, installs, and starts Metro)
+npx expo run:android
 
-To learn more about developing your project with Expo, look at the following resources:
+# iOS (macOS + Xcode required)
+npx expo run:ios
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Once a development build is installed, you can start the bundler on its own with:
 
-## Join the community
+```bash
+npx expo start --dev-client
+```
 
-Join our community of developers creating universal apps.
+Use `npx expo start --clear` if you ever hit stale‑cache issues.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 📁 Project Structure
+
+```
+app/                       # Screens (Expo Router, file-based routing)
+  (tabs)/
+    _layout.tsx            # Root layout: Theme + Language + Achievement providers, tab bar
+    home/                  # Home, chapters, verse reader, favorites, achievements, daily practice…
+    explore/               # Settings, language picker, about, legal, donate
+components/                # Reusable UI (BottomSheet, loaders, modals…)
+context/                   # ThemeContext, LanguageContext, AchievementContext
+utils/                     # gitaData (data access), translations, achievements, m3Theme, notifications
+data/gita.json             # Complete Bhagavad Gita dataset (bundled)
+assets/                    # Icons, splash, images
+```
+
+### Architecture notes
+
+- **Theming** — `utils/m3Theme.ts` exposes `getTheme(isDark)` returning Material 3 tokens used across every screen.
+- **Localization** — `utils/translations.ts` holds all UI strings; screens read them via `useTranslation()`.
+- **Data** — `utils/gitaData.ts` is the typed access layer over the bundled `data/gita.json`.
+- **Persistence** — user state (favorites, read verses, streaks, achievements, language, theme) is stored in AsyncStorage.
+
+---
+
+## 📦 Building for Production
+
+This project is configured for [EAS Build](https://docs.expo.dev/build/introduction/):
+
+```bash
+# Production builds
+npx eas build --platform android --profile production
+npx eas build --platform ios --profile production
+```
+
+Build profiles live in [`eas.json`](./eas.json). Native `android/` and `ios/` folders are committed; after changing native config or upgrading the SDK, regenerate them with:
+
+```bash
+npx expo prebuild --clean
+```
+
+---
+
+## 🙏 Support
+
+This app is completely **free and ad‑free**. If it helps you, you can support its development via UPI from the in‑app **About → Support** screen.
+
+---
+
+## 👤 Author
+
+**Khilan Patel** — Full Stack Developer
+
+---
+
+## 📄 License
+
+This project is provided for personal and devotional use.
