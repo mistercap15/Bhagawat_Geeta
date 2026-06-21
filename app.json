@@ -13,6 +13,7 @@
       "bundleIdentifier": "com.khilanpatel15.Bhagawat-Geeta"
     },
     "android": {
+      "edgeToEdgeEnabled": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/new_icon.png",
         "backgroundColor": "#ffffff"
@@ -44,7 +45,8 @@
             "buildToolsVersion": "35.0.0"
           }
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

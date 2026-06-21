@@ -10,16 +10,13 @@ import Toast from "react-native-toast-message";
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import {
-  useSafeAreaInsets,
-  SafeAreaProvider,
-} from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { initializeDailyReminder } from "@/utils/notifications";
-import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 // Fix: shouldPlaySound must be true
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
@@ -32,9 +29,7 @@ export default function Layout() {
         <ThemeProvider>
           <LanguageProvider>
             <AchievementProvider>
-              <BottomSheetModalProvider>
-                <LayoutContent />
-              </BottomSheetModalProvider>
+              <LayoutContent />
             </AchievementProvider>
           </LanguageProvider>
         </ThemeProvider>
@@ -46,7 +41,6 @@ export default function Layout() {
 function LayoutContent() {
   const { isDarkMode } = useTheme();
   const t = useTranslation();
-  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     // Fix: use initializeDailyReminder instead of setupDailyReminder
@@ -74,9 +68,11 @@ function LayoutContent() {
             tabBarStyle: {
               position: "absolute",
               marginHorizontal: 16,
-              marginBottom: insets.bottom > 0 ? insets.bottom : 10,
-              height: 62 + insets.bottom,
-              paddingBottom: insets.bottom,
+              // ThemedLayout owns the bottom safe-area inset, so the floating
+              // pill keeps a fixed height and just clears it by a constant
+              // margin — correct whether edge-to-edge is on or off.
+              marginBottom: 10,
+              height: 62,
               borderRadius: 32,
               backgroundColor: isDarkMode
                 ? "rgba(8, 28, 48, 0.97)"
