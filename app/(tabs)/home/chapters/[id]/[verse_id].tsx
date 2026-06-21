@@ -44,10 +44,14 @@ const CARD_WIDTH = SCREEN_WIDTH - CARD_HORIZONTAL_PADDING * 2;
 const SWIPE_THRESHOLD = CARD_WIDTH * 0.25;
 
 // ─── PROGRESSIVE CURL CONSTANTS ──────────────────────────────────
-const CURL_MIN_WIDTH = 4;
-const CURL_MAX_WIDTH = 50;
-const SHADOW_MAX_WIDTH = 35;
-const HIGHLIGHT_WIDTH = 3;
+// The curl is the visible "rolled-over" back of the page. Making it wider and
+// shading it like a cylinder is what sells the illusion of real paper.
+const CURL_MIN_WIDTH = 6;
+const CURL_MAX_WIDTH = 72;
+const SHADOW_MAX_WIDTH = 56;
+const HIGHLIGHT_WIDTH = 2.5;
+// Max perspective tilt (deg) applied to the lifted flap for genuine depth.
+const FLAP_MAX_TILT = 22;
 
 // ─── CONFETTI / CELEBRATION CONSTANTS ────────────────────────────
 const PARTICLE_COUNT = 12;
@@ -55,58 +59,66 @@ const FAV_EMOJIS = ["❤️", "💖", "💕", "✨", "💗", "🌟", "💝", "�
 const READ_EMOJIS = ["✅", "⭐", "🎉", "✨", "🌟", "💫", "🎊", "🏆"];
 
 // ─── SHARED CURL WIDTH FUNCTION ──────────────────────────────────
+// The curl starts tight and widens gradually in proportion to how much of the
+// page has been turned, peaking near the end — this reads as a premium, real
+// paper roll rather than a strip that pops to full size instantly.
 function computeCurlWidth(absP: number): number {
   "worklet";
   return interpolate(
     absP,
     [
       0,
-      CARD_WIDTH * 0.03,
-      CARD_WIDTH * 0.12,
-      CARD_WIDTH * 0.25,
-      CARD_WIDTH * 0.88,
-      CARD_WIDTH * 0.96,
-      CARD_WIDTH,
-    ],
-    [
-      0,
-      CURL_MIN_WIDTH,
-      CURL_MAX_WIDTH * 0.6,
-      CURL_MAX_WIDTH,
-      CURL_MAX_WIDTH,
-      CURL_MAX_WIDTH * 0.35,
-      0,
-    ],
-    Extrapolate.CLAMP,
-  );
-}
-
-function computeShadowWidth(absP: number): number {
-  "worklet";
-  return interpolate(
-    absP,
-    [
-      0,
-      CARD_WIDTH * 0.03,
-      CARD_WIDTH * 0.12,
-      CARD_WIDTH * 0.25,
+      CARD_WIDTH * 0.02,
+      CARD_WIDTH * 0.15,
+      CARD_WIDTH * 0.35,
+      CARD_WIDTH * 0.6,
       CARD_WIDTH * 0.85,
       CARD_WIDTH * 0.95,
       CARD_WIDTH,
     ],
     [
       0,
-      4,
-      SHADOW_MAX_WIDTH * 0.5,
-      SHADOW_MAX_WIDTH,
-      SHADOW_MAX_WIDTH,
-      SHADOW_MAX_WIDTH * 0.25,
-      0,
+      CURL_MIN_WIDTH,
+      CURL_MAX_WIDTH * 0.2,
+      CURL_MAX_WIDTH * 0.42,
+      CURL_MAX_WIDTH * 0.68,
+      CURL_MAX_WIDTH * 0.92,
+      CURL_MAX_WIDTH,
+      // Collapse as the page lies flat on the far side at the end of the turn.
+      CURL_MAX_WIDTH * 0.12,
     ],
     Extrapolate.CLAMP,
   );
 }
 
+// Cast-shadow width also grows with the turn, tracking the rising curl.
+function computeShadowWidth(absP: number): number {
+  "worklet";
+  return interpolate(
+    absP,
+    [
+      0,
+      CARD_WIDTH * 0.02,
+      CARD_WIDTH * 0.15,
+      CARD_WIDTH * 0.4,
+      CARD_WIDTH * 0.7,
+      CARD_WIDTH * 0.92,
+      CARD_WIDTH,
+    ],
+    [
+      0,
+      3,
+      SHADOW_MAX_WIDTH * 0.25,
+      SHADOW_MAX_WIDTH * 0.55,
+      SHADOW_MAX_WIDTH * 0.85,
+      SHADOW_MAX_WIDTH,
+      SHADOW_MAX_WIDTH * 0.8,
+    ],
+    Extrapolate.CLAMP,
+  );
+}
+
+// Shading intensity ramps in quickly then holds, fading only at the very end.
 function computeIntensity(absP: number): number {
   "worklet";
   return interpolate(
@@ -115,11 +127,10 @@ function computeIntensity(absP: number): number {
       0,
       CARD_WIDTH * 0.04,
       CARD_WIDTH * 0.2,
-      CARD_WIDTH * 0.85,
-      CARD_WIDTH * 0.95,
+      CARD_WIDTH * 0.9,
       CARD_WIDTH,
     ],
-    [0, 0.3, 1, 1, 0.3, 0],
+    [0, 0.35, 1, 1, 0.6],
     Extrapolate.CLAMP,
   );
 }
@@ -443,6 +454,9 @@ export default function VerseDetails() {
         return;
       }
 
+      // Soft tactile "page settle" tick.
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
       setCurrentVerseId(nextId);
       await loadVerse(nextId);
       await loadAdjacentVerses(nextId);
@@ -518,161 +532,96 @@ export default function VerseDetails() {
   //  PAGE CURL ANIMATED STYLES
   // ═══════════════════════════════════════════════════════════════
 
+  // ─── UNIFIED PAGE-TURN MODEL ───────────────────────────────────
+  // The page being turned is always anchored at the LEFT, with its lifted
+  // (leading) edge on the RIGHT and the curl riding that edge. The destination
+  // page sits static, full-width, underneath. This makes "next" and "prev" the
+  // exact same physical motion — only which page turns and where its leading
+  // edge travels differs:
+  //   • next (swipe ←): the CURRENT page turns away; leading edge runs W → 0.
+  //   • prev (swipe →): the PREVIOUS page sweeps in; leading edge runs 0 → W.
+  const leadingEdgeFor = (p: number, absP: number) => {
+    "worklet";
+    return p < 0 ? CARD_WIDTH - absP : absP;
+  };
+
+  // CURRENT page: full-width at rest / when going back (it is the base for
+  // prev). When going forward it becomes the turning page and shrinks.
   const currentPageClipStyle = useAnimatedStyle(() => {
     const p = swipeProgress.value;
-    if (p === 0) return { width: CARD_WIDTH, left: 0 };
+    if (p >= 0) return { width: CARD_WIDTH, left: 0 };
 
-    const absP = Math.min(Math.abs(p), CARD_WIDTH);
+    const absP = Math.min(-p, CARD_WIDTH);
     const curlW = computeCurlWidth(absP);
-    const currentW = Math.max(0, CARD_WIDTH - absP - curlW / 2);
-
-    if (p < 0) {
-      return { width: currentW, left: 0 };
-    } else {
-      const clipLeft = CARD_WIDTH - currentW;
-      return { width: currentW, left: clipLeft };
-    }
+    const leadingEdge = CARD_WIDTH - absP;
+    const flatW = Math.max(0, leadingEdge - curlW);
+    return { width: flatW, left: 0 };
   });
 
-  const currentPageInnerStyle = useAnimatedStyle(() => {
+  // PREVIOUS page: hidden at rest, sweeps in from the left when going back.
+  const prevPageClipStyle = useAnimatedStyle(() => {
     const p = swipeProgress.value;
-    if (p <= 0) return { left: 0 };
+    if (p <= 0) return { width: 0, left: 0 };
 
     const absP = Math.min(p, CARD_WIDTH);
     const curlW = computeCurlWidth(absP);
-    const currentW = Math.max(0, CARD_WIDTH - absP - curlW / 2);
-    const clipLeft = CARD_WIDTH - currentW;
-
-    return { left: -clipLeft };
+    const flatW = Math.max(0, absP - curlW);
+    return { width: flatW, left: 0 };
   });
 
-  const nextPageClipStyle = useAnimatedStyle(() => {
-    if (swipeProgress.value >= 0) return { width: 0, opacity: 0, right: 0 };
+  // The rolled-over back of the turning page — shaded like a paper cylinder
+  // and tilted in 3D so its lifted edge reads with real depth.
+  const curlStyle = useAnimatedStyle(() => {
+    const p = swipeProgress.value;
+    if (p === 0)
+      return { opacity: 0, width: 0, left: -200, transform: [] };
 
-    const absP = Math.min(Math.abs(swipeProgress.value), CARD_WIDTH);
+    const absP = Math.min(Math.abs(p), CARD_WIDTH);
     const curlW = computeCurlWidth(absP);
-    const revealW = Math.max(0, absP - curlW / 2);
+    const intensity = computeIntensity(absP);
+    const leadingEdge = leadingEdgeFor(p, absP);
+    const left = Math.max(0, leadingEdge - curlW);
 
     return {
-      width: revealW,
-      opacity: absP > 5 ? 1 : 0,
-      right: 0,
-    };
-  });
-
-  const nextPageInnerStyle = useAnimatedStyle(() => {
-    if (swipeProgress.value >= 0) return { left: 0 };
-
-    const absP = Math.min(Math.abs(swipeProgress.value), CARD_WIDTH);
-    const curlW = computeCurlWidth(absP);
-    const revealW = Math.max(0, absP - curlW / 2);
-
-    return { left: -(CARD_WIDTH - revealW) };
-  });
-
-  const prevPageClipStyle = useAnimatedStyle(() => {
-    if (swipeProgress.value <= 0) return { width: 0, opacity: 0, left: 0 };
-
-    const absP = Math.min(swipeProgress.value, CARD_WIDTH);
-    const curlW = computeCurlWidth(absP);
-    const revealW = Math.max(0, absP - curlW / 2);
-
-    return {
-      width: revealW,
-      opacity: absP > 5 ? 1 : 0,
-      left: 0,
-    };
-  });
-
-  const prevPageInnerStyle = useAnimatedStyle(() => {
-    return { left: 0 };
-  });
-
-  const foldBackRightStyle = useAnimatedStyle(() => {
-    if (swipeProgress.value >= 0) return { opacity: 0, width: 0, left: -100 };
-
-    const absP = Math.min(Math.abs(swipeProgress.value), CARD_WIDTH);
-    const curlW = computeCurlWidth(absP);
-    const currentW = Math.max(0, CARD_WIDTH - absP - curlW / 2);
-
-    return {
-      opacity: absP > 3 ? 1 : 0,
+      opacity: absP > 2 ? 1 : 0,
       width: curlW,
-      left: currentW,
+      left,
+      transform: [
+        { perspective: 1000 },
+        { rotateY: `${-FLAP_MAX_TILT * intensity}deg` },
+      ],
     };
   });
 
-  const foldBackLeftStyle = useAnimatedStyle(() => {
-    if (swipeProgress.value <= 0) return { opacity: 0, width: 0, left: -100 };
+  // Soft shadow the lifted page casts onto the page beneath it.
+  const shadowStyle = useAnimatedStyle(() => {
+    const p = swipeProgress.value;
+    if (p === 0) return { opacity: 0, left: -200, width: 0 };
 
-    const absP = Math.min(swipeProgress.value, CARD_WIDTH);
-    const curlW = computeCurlWidth(absP);
-    const revealW = Math.max(0, absP - curlW / 2);
-
-    return {
-      opacity: absP > 3 ? 1 : 0,
-      width: curlW,
-      left: revealW,
-    };
-  });
-
-  const shadowRightStyle = useAnimatedStyle(() => {
-    if (swipeProgress.value >= 0) return { opacity: 0, left: -200, width: 0 };
-
-    const absP = Math.min(Math.abs(swipeProgress.value), CARD_WIDTH);
-    const curlW = computeCurlWidth(absP);
+    const absP = Math.min(Math.abs(p), CARD_WIDTH);
     const shadowW = computeShadowWidth(absP);
     const intensity = computeIntensity(absP);
-    const currentW = Math.max(0, CARD_WIDTH - absP - curlW / 2);
+    const leadingEdge = leadingEdgeFor(p, absP);
 
     return {
       opacity: intensity,
       width: shadowW,
-      left: Math.max(0, currentW - shadowW),
+      left: leadingEdge,
     };
   });
 
-  const shadowLeftStyle = useAnimatedStyle(() => {
-    if (swipeProgress.value <= 0) return { opacity: 0, left: -200, width: 0 };
+  // Bright sheen along the very crest of the curl.
+  const highlightStyle = useAnimatedStyle(() => {
+    const p = swipeProgress.value;
+    if (p === 0) return { opacity: 0, left: -200 };
 
-    const absP = Math.min(swipeProgress.value, CARD_WIDTH);
-    const curlW = computeCurlWidth(absP);
-    const shadowW = computeShadowWidth(absP);
+    const absP = Math.min(Math.abs(p), CARD_WIDTH);
     const intensity = computeIntensity(absP);
-    const revealW = Math.max(0, absP - curlW / 2);
+    const leadingEdge = leadingEdgeFor(p, absP);
 
     return {
-      opacity: intensity,
-      width: shadowW,
-      left: revealW + curlW,
-    };
-  });
-
-  const highlightRightStyle = useAnimatedStyle(() => {
-    if (swipeProgress.value >= 0) return { opacity: 0, left: -200 };
-
-    const absP = Math.min(Math.abs(swipeProgress.value), CARD_WIDTH);
-    const curlW = computeCurlWidth(absP);
-    const intensity = computeIntensity(absP);
-    const currentW = Math.max(0, CARD_WIDTH - absP - curlW / 2);
-
-    return {
-      opacity: intensity,
-      left: currentW + curlW - 1,
-    };
-  });
-
-  const highlightLeftStyle = useAnimatedStyle(() => {
-    if (swipeProgress.value <= 0) return { opacity: 0, left: -200 };
-
-    const absP = Math.min(swipeProgress.value, CARD_WIDTH);
-    const curlW = computeCurlWidth(absP);
-    const intensity = computeIntensity(absP);
-    const revealW = Math.max(0, absP - curlW / 2);
-
-    return {
-      opacity: intensity,
-      left: revealW - HIGHLIGHT_WIDTH + 1,
+      opacity: intensity * 0.9,
+      left: leadingEdge - HIGHLIGHT_WIDTH,
     };
   });
 
@@ -1040,186 +989,102 @@ export default function VerseDetails() {
             failOffsetY={[-15, 15]}
           >
             <Animated.View style={styles.gestureContainer}>
+              {/* Base destination page — static, full width, underneath. */}
               {nextVerse && (
-                <Animated.View
-                  style={[styles.clipLayer, { zIndex: 1 }, nextPageClipStyle]}
-                >
-                  <Animated.View
-                    style={[
-                      styles.innerCard,
-                      { width: CARD_WIDTH },
-                      nextPageInnerStyle,
-                    ]}
-                  >
+                <View style={[styles.clipLayer, styles.fullCard, { zIndex: 1 }]}>
+                  <View style={[styles.innerCard, styles.fullCard]}>
                     {renderVerseCard(nextVerse, currentVerseId + 1)}
-                  </Animated.View>
-                </Animated.View>
+                  </View>
+                </View>
               )}
 
+              {/* Current page: base when going back, turning leaf when going forward. */}
+              <Animated.View
+                style={[styles.clipLayer, { zIndex: 2 }, currentPageClipStyle]}
+              >
+                <View style={[styles.innerCard, styles.fullCard]}>
+                  {renderVerseCard(verse, currentVerseId, true)}
+                </View>
+              </Animated.View>
+
+              {/* Previous page: sweeps in over the current page when going back. */}
               {prevVerse && (
                 <Animated.View
-                  style={[styles.clipLayer, { zIndex: 1 }, prevPageClipStyle]}
+                  style={[styles.clipLayer, { zIndex: 3 }, prevPageClipStyle]}
                 >
-                  <Animated.View
-                    style={[
-                      styles.innerCard,
-                      { width: CARD_WIDTH },
-                      prevPageInnerStyle,
-                    ]}
-                  >
+                  <View style={[styles.innerCard, styles.fullCard]}>
                     {renderVerseCard(prevVerse, currentVerseId - 1)}
-                  </Animated.View>
+                  </View>
                 </Animated.View>
               )}
 
+              {/* Soft shadow the lifted leaf casts on the page beneath it */}
               <Animated.View
-                style={[styles.clipLayer, { zIndex: 5 }, currentPageClipStyle]}
-              >
-                <Animated.View
-                  style={[
-                    styles.innerCard,
-                    { width: CARD_WIDTH },
-                    currentPageInnerStyle,
-                  ]}
-                >
-                  {renderVerseCard(verse, currentVerseId, true)}
-                </Animated.View>
-              </Animated.View>
-
-              {/* Fold-back strips */}
-              <Animated.View
-                style={[
-                  styles.foldBack,
-                  { backgroundColor: palette.foldBack, zIndex: 8 },
-                  foldBackRightStyle,
-                ]}
-                pointerEvents="none"
-              >
-                <LinearGradient
-                  colors={
-                    isDarkMode
-                      ? [
-                          "rgba(255,255,255,0.05)",
-                          "rgba(0,0,0,0.06)",
-                          "rgba(0,0,0,0.14)",
-                          "rgba(0,0,0,0.06)",
-                          "rgba(255,255,255,0.04)",
-                        ]
-                      : [
-                          "rgba(255,255,255,0.45)",
-                          "rgba(0,0,0,0.03)",
-                          "rgba(0,0,0,0.07)",
-                          "rgba(0,0,0,0.02)",
-                          "rgba(255,255,255,0.35)",
-                        ]
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
-                />
-              </Animated.View>
-
-              <Animated.View
-                style={[
-                  styles.foldBack,
-                  { backgroundColor: palette.foldBack, zIndex: 8 },
-                  foldBackLeftStyle,
-                ]}
-                pointerEvents="none"
-              >
-                <LinearGradient
-                  colors={
-                    isDarkMode
-                      ? [
-                          "rgba(255,255,255,0.04)",
-                          "rgba(0,0,0,0.06)",
-                          "rgba(0,0,0,0.14)",
-                          "rgba(0,0,0,0.06)",
-                          "rgba(255,255,255,0.05)",
-                        ]
-                      : [
-                          "rgba(255,255,255,0.35)",
-                          "rgba(0,0,0,0.02)",
-                          "rgba(0,0,0,0.07)",
-                          "rgba(0,0,0,0.03)",
-                          "rgba(255,255,255,0.45)",
-                        ]
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
-                />
-              </Animated.View>
-
-              {/* Shadows */}
-              <Animated.View
-                style={[styles.foldShadow, { zIndex: 9 }, shadowRightStyle]}
+                style={[styles.foldShadow, { zIndex: 6 }, shadowStyle]}
                 pointerEvents="none"
               >
                 <LinearGradient
                   colors={[
+                    "rgba(0,0,0,0.4)",
+                    "rgba(0,0,0,0.22)",
+                    "rgba(0,0,0,0.1)",
+                    "rgba(0,0,0,0.03)",
                     "rgba(0,0,0,0)",
-                    "rgba(0,0,0,0.05)",
-                    "rgba(0,0,0,0.15)",
-                    "rgba(0,0,0,0.32)",
                   ]}
+                  locations={[0, 0.15, 0.35, 0.6, 1]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={StyleSheet.absoluteFill}
                 />
               </Animated.View>
 
-              <Animated.View
-                style={[styles.foldShadow, { zIndex: 9 }, shadowLeftStyle]}
-                pointerEvents="none"
-              >
-                <LinearGradient
-                  colors={[
-                    "rgba(0,0,0,0.32)",
-                    "rgba(0,0,0,0.15)",
-                    "rgba(0,0,0,0.05)",
-                    "rgba(0,0,0,0)",
-                  ]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
-                />
-              </Animated.View>
-
-              {/* Highlights */}
+              {/* Rolled-over back of the turning leaf — shaded like a paper cylinder */}
               <Animated.View
                 style={[
-                  styles.foldHighlight,
-                  { zIndex: 10 },
-                  highlightRightStyle,
+                  styles.foldBack,
+                  { backgroundColor: palette.foldBack, zIndex: 8 },
+                  curlStyle,
                 ]}
                 pointerEvents="none"
               >
                 <LinearGradient
+                  // crease (meets flat page) → lit apex → darkening underside
                   colors={
                     isDarkMode
-                      ? ["rgba(255,255,255,0.18)", "rgba(255,255,255,0.03)"]
-                      : ["rgba(255,255,255,0.95)", "rgba(255,255,255,0.15)"]
+                      ? [
+                          "rgba(0,0,0,0.34)",
+                          "rgba(255,255,255,0.16)",
+                          "rgba(255,255,255,0.07)",
+                          "rgba(0,0,0,0.22)",
+                          "rgba(0,0,0,0.42)",
+                          "rgba(0,0,0,0.62)",
+                        ]
+                      : [
+                          "rgba(0,0,0,0.12)",
+                          "rgba(255,255,255,0.8)",
+                          "rgba(255,255,255,0.5)",
+                          "rgba(0,0,0,0.05)",
+                          "rgba(0,0,0,0.22)",
+                          "rgba(0,0,0,0.44)",
+                        ]
                   }
+                  locations={[0, 0.22, 0.45, 0.68, 0.86, 1]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={StyleSheet.absoluteFill}
                 />
               </Animated.View>
 
+              {/* Bright sheen along the crest of the curl */}
               <Animated.View
-                style={[
-                  styles.foldHighlight,
-                  { zIndex: 10 },
-                  highlightLeftStyle,
-                ]}
+                style={[styles.foldHighlight, { zIndex: 9 }, highlightStyle]}
                 pointerEvents="none"
               >
                 <LinearGradient
                   colors={
                     isDarkMode
-                      ? ["rgba(255,255,255,0.03)", "rgba(255,255,255,0.18)"]
-                      : ["rgba(255,255,255,0.15)", "rgba(255,255,255,0.95)"]
+                      ? ["rgba(255,255,255,0.04)", "rgba(255,255,255,0.22)"]
+                      : ["rgba(255,255,255,0.12)", "rgba(255,255,255,0.97)"]
                   }
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
@@ -1266,6 +1131,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     height: "100%",
+  },
+  // Full-width leaf anchored to the left edge (shared by every page layer).
+  fullCard: {
+    width: CARD_WIDTH,
+    left: 0,
   },
   pageContainer: {
     flex: 1,

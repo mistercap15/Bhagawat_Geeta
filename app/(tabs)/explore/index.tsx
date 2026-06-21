@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Alert,
   StyleSheet,
-  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
@@ -28,12 +27,7 @@ import {
   X,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  BottomSheetModal,
-  BottomSheetBackdrop,
-  BottomSheetView,
-} from "@gorhom/bottom-sheet";
+import BottomSheet, { BottomSheetRef } from "@/components/BottomSheet";
 
 const MENU_SECTIONS = [
   {
@@ -88,7 +82,7 @@ const Explore = () => {
   const { toggleTheme, isDarkMode } = useTheme();
   const { language, setLanguage } = useLanguage();
   const t = useTranslation();
-  const sheetRef = useRef<BottomSheetModal>(null);
+  const sheetRef = useRef<BottomSheetRef>(null);
 
   const c = {
     text: isDarkMode ? "#E8F2FF" : "#1A0A00",
@@ -102,23 +96,11 @@ const Explore = () => {
   const openSheet = useCallback(() => sheetRef.current?.present(), []);
   const closeSheet = useCallback(() => sheetRef.current?.dismiss(), []);
 
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.55}
-        pressBehavior="close"
-      />
-    ),
-    [],
-  );
-
   const currentLangOption = LANG_OPTIONS.find((o) => o.lang === language)!;
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+    // Top safe-area is owned by ThemedLayout; this screen just fills it.
+    <View style={{ flex: 1 }}>
       <LinearGradient
         colors={isDarkMode ? ["#040C18", "#081C30"] : ["#FFF3DC", "#FFE8B0"]}
         style={{ flex: 1 }}
@@ -244,19 +226,12 @@ const Explore = () => {
       </LinearGradient>
 
       {/* ── Language Bottom Sheet ── */}
-      <BottomSheetModal
+      <BottomSheet
         ref={sheetRef}
-        enableDynamicSizing
-        enablePanDownToClose
-        backdropComponent={renderBackdrop}
-        handleIndicatorStyle={{ backgroundColor: c.handleColor, width: 40 }}
-        backgroundStyle={{
-          backgroundColor: c.sheetBg,
-          borderTopLeftRadius: 28,
-          borderTopRightRadius: 28,
-        }}
+        backgroundColor={c.sheetBg}
+        handleColor={c.handleColor}
       >
-        <BottomSheetView style={[styles.sheetContent, { paddingBottom: Platform.OS === "ios" ? 44 : 32 }]}>
+        <View style={styles.sheetContent}>
 
           {/* Close button */}
           <TouchableOpacity
@@ -344,9 +319,9 @@ const Explore = () => {
               ? "Your choice is saved automatically 🙏"
               : "आपकी पसंद स्वतः सहेज ली जाती है 🙏"}
           </Text>
-        </BottomSheetView>
-      </BottomSheetModal>
-    </SafeAreaView>
+        </View>
+      </BottomSheet>
+    </View>
   );
 };
 

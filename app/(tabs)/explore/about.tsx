@@ -14,13 +14,9 @@ import { useTheme } from "@/context/ThemeContext";
 import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
 import { Code2, Heart, Download, IndianRupee, X, ChevronLeft } from "lucide-react-native";
-import {
-  BottomSheetModal,
-  BottomSheetBackdrop,
-  BottomSheetView,
-} from "@gorhom/bottom-sheet";
+import BottomSheet, { BottomSheetRef } from "@/components/BottomSheet";
 import * as MediaLibrary from "expo-media-library";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { Asset } from "expo-asset";
 import Toast from "react-native-toast-message";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -36,7 +32,7 @@ const About = () => {
   const t = useTranslation();
   const insets = useSafeAreaInsets();
   const isHindi = t.meaningKey === "hi";
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const bottomSheetModalRef = useRef<BottomSheetRef>(null);
 
   const c = {
     text: isDarkMode ? "#E8F2FF" : "#1A0A00",
@@ -54,19 +50,6 @@ const About = () => {
   const closeSheet = useCallback(() => {
     bottomSheetModalRef.current?.dismiss();
   }, []);
-
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.55}
-        pressBehavior="close"
-      />
-    ),
-    [],
-  );
 
   const saveQrToGallery = async () => {
     try {
@@ -208,23 +191,13 @@ const About = () => {
         </Text>
       </ScrollView>
 
-      {/* ── UPI QR Bottom Sheet Modal ── */}
-      <BottomSheetModal
+      {/* ── UPI QR Bottom Sheet ── */}
+      <BottomSheet
         ref={bottomSheetModalRef}
-        enableDynamicSizing
-        enablePanDownToClose
-        backdropComponent={renderBackdrop}
-        handleIndicatorStyle={{
-          backgroundColor: c.handleColor,
-          width: 40,
-        }}
-        backgroundStyle={{
-          backgroundColor: c.sheetBg,
-          borderTopLeftRadius: 28,
-          borderTopRightRadius: 28,
-        }}
+        backgroundColor={c.sheetBg}
+        handleColor={c.handleColor}
       >
-        <BottomSheetView style={styles.sheetContent}>
+        <View style={styles.sheetContent}>
           {/* Close button */}
           <TouchableOpacity
             onPress={closeSheet}
@@ -284,8 +257,8 @@ const About = () => {
           <Text style={[styles.sheetFooter, { color: c.sub }]}>
             {isHindi ? "प्रत्येक योगदान गीता को सबके लिए मुफ़्त रखने में मदद करता है 🙏" : "Every contribution helps keep the Gita free for everyone 🙏"}
           </Text>
-        </BottomSheetView>
-      </BottomSheetModal>
+        </View>
+      </BottomSheet>
     </LinearGradient>
   );
 };

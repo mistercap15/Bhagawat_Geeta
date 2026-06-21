@@ -27,12 +27,11 @@ import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import { getSlok } from "@/utils/gitaData";
 import * as Sharing from "expo-sharing";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { captureRef } from "react-native-view-shot";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialLoader from "@/components/MaterialLoader";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import homeLogo from "../../../assets/images/splashScreen.png";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -94,7 +93,6 @@ export default function HomeScreen() {
   const t = useTranslation();
   const { userStats, unlockedAchievements } = useAchievements();
   const viewRef = useRef<View>(null);
-  const insets = useSafeAreaInsets();
 
   const currentRank = getUserRank(userStats.totalVersesRead);
 
@@ -200,7 +198,7 @@ export default function HomeScreen() {
         ═══════════════════════════════════════════════════════════════════ */}
         <LinearGradient
           colors={heroColors}
-          style={[styles.hero, { paddingTop: insets.top + 28 }]}
+          style={[styles.hero, { paddingTop: 28 }]}
         >
           {/* Large translucent OM watermark */}
           <Text style={styles.omWatermark}>ॐ</Text>
