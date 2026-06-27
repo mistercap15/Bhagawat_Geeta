@@ -15,8 +15,9 @@
     "android": {
       "edgeToEdgeEnabled": false,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/new_icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/adaptive_foreground.png",
+        "backgroundImage": "./assets/images/adaptive_background.png",
+        "backgroundColor": "#7A2E12"
       },
       "package": "com.khilanpatel15.Bhagawat_Geeta"
     },
