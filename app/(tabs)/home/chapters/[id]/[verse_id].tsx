@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -43,97 +43,28 @@ const CARD_HORIZONTAL_PADDING = 20;
 const CARD_WIDTH = SCREEN_WIDTH - CARD_HORIZONTAL_PADDING * 2;
 const SWIPE_THRESHOLD = CARD_WIDTH * 0.25;
 
-// ─── PROGRESSIVE CURL CONSTANTS ──────────────────────────────────
-// The curl is the visible "rolled-over" back of the page. Making it wider and
-// shading it like a cylinder is what sells the illusion of real paper.
-const CURL_MIN_WIDTH = 6;
-const CURL_MAX_WIDTH = 72;
-const SHADOW_MAX_WIDTH = 56;
-const HIGHLIGHT_WIDTH = 2.5;
-// Max perspective tilt (deg) applied to the lifted flap for genuine depth.
-const FLAP_MAX_TILT = 22;
+// ─── PAGE-CURL CONSTANTS ─────────────────────────────────────────
+// How far a horizontal drag must travel before we treat it as a page turn and
+// reveal the destination page behind the current one.
+const TURN_START_PX = 12;
+
+// The rolled cylinder starts tight and widens as more of the page lifts — like
+// real paper arcing over — peaking near the end of the turn, then easing back
+// as it lies flat on the far side. `t` is turn progress 0..1.
+function computeCurlW(t: number): number {
+  "worklet";
+  return interpolate(
+    t,
+    [0, 0.05, 0.2, 0.5, 0.8, 1],
+    [0, 12, 34, 60, 82, 70],
+    Extrapolate.CLAMP,
+  );
+}
 
 // ─── CONFETTI / CELEBRATION CONSTANTS ────────────────────────────
 const PARTICLE_COUNT = 12;
 const FAV_EMOJIS = ["❤️", "💖", "💕", "✨", "💗", "🌟", "💝", "♥️"];
 const READ_EMOJIS = ["✅", "⭐", "🎉", "✨", "🌟", "💫", "🎊", "🏆"];
-
-// ─── SHARED CURL WIDTH FUNCTION ──────────────────────────────────
-// The curl starts tight and widens gradually in proportion to how much of the
-// page has been turned, peaking near the end — this reads as a premium, real
-// paper roll rather than a strip that pops to full size instantly.
-function computeCurlWidth(absP: number): number {
-  "worklet";
-  return interpolate(
-    absP,
-    [
-      0,
-      CARD_WIDTH * 0.02,
-      CARD_WIDTH * 0.15,
-      CARD_WIDTH * 0.35,
-      CARD_WIDTH * 0.6,
-      CARD_WIDTH * 0.85,
-      CARD_WIDTH * 0.95,
-      CARD_WIDTH,
-    ],
-    [
-      0,
-      CURL_MIN_WIDTH,
-      CURL_MAX_WIDTH * 0.2,
-      CURL_MAX_WIDTH * 0.42,
-      CURL_MAX_WIDTH * 0.68,
-      CURL_MAX_WIDTH * 0.92,
-      CURL_MAX_WIDTH,
-      // Collapse as the page lies flat on the far side at the end of the turn.
-      CURL_MAX_WIDTH * 0.12,
-    ],
-    Extrapolate.CLAMP,
-  );
-}
-
-// Cast-shadow width also grows with the turn, tracking the rising curl.
-function computeShadowWidth(absP: number): number {
-  "worklet";
-  return interpolate(
-    absP,
-    [
-      0,
-      CARD_WIDTH * 0.02,
-      CARD_WIDTH * 0.15,
-      CARD_WIDTH * 0.4,
-      CARD_WIDTH * 0.7,
-      CARD_WIDTH * 0.92,
-      CARD_WIDTH,
-    ],
-    [
-      0,
-      3,
-      SHADOW_MAX_WIDTH * 0.25,
-      SHADOW_MAX_WIDTH * 0.55,
-      SHADOW_MAX_WIDTH * 0.85,
-      SHADOW_MAX_WIDTH,
-      SHADOW_MAX_WIDTH * 0.8,
-    ],
-    Extrapolate.CLAMP,
-  );
-}
-
-// Shading intensity ramps in quickly then holds, fading only at the very end.
-function computeIntensity(absP: number): number {
-  "worklet";
-  return interpolate(
-    absP,
-    [
-      0,
-      CARD_WIDTH * 0.04,
-      CARD_WIDTH * 0.2,
-      CARD_WIDTH * 0.9,
-      CARD_WIDTH,
-    ],
-    [0, 0.35, 1, 1, 0.6],
-    Extrapolate.CLAMP,
-  );
-}
 
 // ═══════════════════════════════════════════════════════════════════
 //  CELEBRATION PARTICLE COMPONENT
@@ -289,6 +220,40 @@ function GlowRing({
   );
 }
 
+// ─── STABLE-WIDTH TOGGLE LABEL ───────────────────────────────────
+// A button label whose two states have different text lengths would make the
+// pill re-measure (and, in a centered row, shift both buttons) every tap. We
+// reserve the width of the WIDER of the two states with invisible sizer texts,
+// then paint the active label on top — so the pill width never changes.
+function ToggleLabel({
+  on,
+  off,
+  active,
+  color,
+}: {
+  on: string;
+  off: string;
+  active: boolean;
+  color: string;
+}) {
+  return (
+    <View style={styles.labelSizer}>
+      <Text style={styles.labelText} numberOfLines={1}>
+        {on}
+      </Text>
+      <Text style={styles.labelText} numberOfLines={1}>
+        {off}
+      </Text>
+      <Text
+        style={[styles.labelText, styles.labelVisible, { color }]}
+        numberOfLines={1}
+      >
+        {active ? on : off}
+      </Text>
+    </View>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════
 
 export default function VerseDetails() {
@@ -314,6 +279,13 @@ export default function VerseDetails() {
   const [favCelebration, setFavCelebration] = useState(0);
   const [readCelebration, setReadCelebration] = useState(0);
 
+  // ─── Page-turn state ───────────────────────────────────────────
+  // Once a horizontal drag is recognised we lock its direction, which renders
+  // the destination page behind the current one. The current page then peels
+  // away (live view, pure Reanimated transforms) to uncover it.
+  const [turnDir, setTurnDir] = useState<"next" | "prev" | null>(null);
+  const turnStartedRef = useRef(false);
+
   const swipeProgress = useSharedValue(0);
   const favScale = useSharedValue(1);
   const readScale = useSharedValue(1);
@@ -333,13 +305,10 @@ export default function VerseDetails() {
       innerCard: isDarkMode ? "#081C30" : "#FDF2E5",
       shadow: isDarkMode ? "rgba(0,0,0,0.6)" : "rgba(138,77,36,0.2)",
       bookmark: "#C41E3A",
-      foldBack: isDarkMode ? "#040C18" : "#E8D9C8",
-      foldHighlight: isDarkMode
-        ? "rgba(255,255,255,0.12)"
-        : "rgba(255,255,255,0.85)",
     }),
     [isDarkMode],
   );
+
 
   const favAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: favScale.value }],
@@ -378,6 +347,84 @@ export default function VerseDetails() {
           ),
         },
       ],
+    };
+  });
+
+  // ─── Rolled page curl ──────────────────────────────────────────
+  // The page's leading edge rolls into a shaded paper cylinder that travels
+  // across as you swipe: the flat part shrinks, the roll rides its edge, and
+  // the destination page is uncovered beyond. Pure gradients on live views.
+  // Symmetric geometry: the CURRENT page always curls off in the swipe
+  // direction, uncovering the destination behind it.
+  //   next (p<0): current curls off to the LEFT — fold runs W → 0, roll bulges
+  //     to the RIGHT of the fold, next page revealed on the right.
+  //   prev (p>0): current curls off to the RIGHT — fold runs 0 → W, roll bulges
+  //     to the LEFT of the fold, previous page revealed on the left.
+  // `fold` is the line where the flat page meets the roll.
+  const foldPos = (p: number) => {
+    "worklet";
+    const t = Math.abs(p) / CARD_WIDTH;
+    return p <= 0 ? CARD_WIDTH * (1 - t) : CARD_WIDTH * t;
+  };
+
+  // Roll size depends on how far the fold is from the leading edge, so the same
+  // fold position gives the same bulge whichever way you turn:
+  //   next: grows as the page lifts off (small → big, right → left).
+  //   prev: un-turns, so it shrinks as the page flattens (big → small, left →
+  //     right) — the bulge DECREASES as it reaches the right end.
+  const curlOf = (p: number) => {
+    "worklet";
+    const t = Math.abs(p) / CARD_WIDTH;
+    return computeCurlW(p > 0 ? 1 - t : t);
+  };
+
+  const flatClip = useAnimatedStyle(() => {
+    const p = Math.max(-CARD_WIDTH, Math.min(CARD_WIDTH, swipeProgress.value));
+    const fold = foldPos(p);
+    if (p > 0) return { left: fold, width: CARD_WIDTH - fold };
+    return { left: 0, width: p < 0 ? fold : CARD_WIDTH };
+  });
+
+  // Counter-shift the card inside the clip so it stays FIXED while the clip
+  // window moves (prev clips from the left, so the window's left edge travels).
+  const flatContent = useAnimatedStyle(() => {
+    const p = Math.max(-CARD_WIDTH, Math.min(CARD_WIDTH, swipeProgress.value));
+    return { left: p > 0 ? -foldPos(p) : 0 };
+  });
+
+  // Self-shadow where the flat page bends up into the roll (dark AT the fold).
+  const foldSelfShadow = useAnimatedStyle(() => {
+    const p = Math.max(-CARD_WIDTH, Math.min(CARD_WIDTH, swipeProgress.value));
+    const t = Math.abs(p) / CARD_WIDTH;
+    const fold = foldPos(p);
+    const w = 30;
+    return { opacity: t * 0.9, width: w, left: p > 0 ? fold : fold - w };
+  });
+
+  // The rolled paper cylinder riding the fold.
+  const rollStyle = useAnimatedStyle(() => {
+    const p = Math.max(-CARD_WIDTH, Math.min(CARD_WIDTH, swipeProgress.value));
+    const t = Math.abs(p) / CARD_WIDTH;
+    const curlW = curlOf(p);
+    const fold = foldPos(p);
+    return {
+      opacity: t > 0.001 ? 1 : 0,
+      width: curlW,
+      left: p > 0 ? fold - curlW : fold,
+    };
+  });
+
+  // Soft shadow the roll casts on the revealed page beyond it — tracks the roll.
+  const rollShadow = useAnimatedStyle(() => {
+    const p = Math.max(-CARD_WIDTH, Math.min(CARD_WIDTH, swipeProgress.value));
+    const t = Math.abs(p) / CARD_WIDTH;
+    const curlW = curlOf(p);
+    const shadowW = curlW * 0.95;
+    const fold = foldPos(p);
+    return {
+      opacity: t,
+      width: shadowW,
+      left: p > 0 ? fold - curlW - shadowW : fold + curlW,
     };
   });
 
@@ -443,6 +490,12 @@ export default function VerseDetails() {
     return () => clearTimeout(timeout);
   }, [currentVerseId]);
 
+  // ─── Turn lifecycle ────────────────────────────────────────────
+  const resetTurn = useCallback(() => {
+    setTurnDir(null);
+    turnStartedRef.current = false;
+  }, []);
+
   // ─── Verse Change ──────────────────────────────────────────────
   const changeVerse = useCallback(
     async (direction: "next" | "prev") => {
@@ -451,19 +504,18 @@ export default function VerseDetails() {
 
       if (nextId < 1 || nextId > versesCount) {
         swipeProgress.value = withTiming(0, { duration: 250 });
+        resetTurn();
         return;
       }
-
-      // Soft tactile "page settle" tick.
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
       setCurrentVerseId(nextId);
       await loadVerse(nextId);
       await loadAdjacentVerses(nextId);
 
       swipeProgress.value = 0;
+      resetTurn();
     },
-    [currentVerseId, versesCount, chapterId],
+    [currentVerseId, versesCount, chapterId, resetTurn],
   );
 
   // ─── Gesture Handlers ──────────────────────────────────────────
@@ -483,6 +535,17 @@ export default function VerseDetails() {
         return;
       }
 
+      // Once the drag clears the threshold, lock the direction so the
+      // destination page renders behind the current (peeling) page.
+      if (
+        !turnStartedRef.current &&
+        Math.abs(tx) > TURN_START_PX &&
+        Math.abs(tx) > Math.abs(ty)
+      ) {
+        turnStartedRef.current = true;
+        setTurnDir(tx < 0 ? "next" : "prev");
+      }
+
       swipeProgress.value = Math.max(-CARD_WIDTH, Math.min(CARD_WIDTH, tx));
     },
     [nextVerse, prevVerse],
@@ -494,16 +557,25 @@ export default function VerseDetails() {
       const velocityX = e.nativeEvent.velocityX || 0;
 
       if (Math.abs(ty) > Math.abs(swipeProgress.value)) {
-        swipeProgress.value = withTiming(0, { duration: 250 });
+        swipeProgress.value = withTiming(0, { duration: 250 }, () =>
+          runOnJS(resetTurn)(),
+        );
         return;
       }
 
-      const absProgress = Math.abs(swipeProgress.value);
-      const fastSwipe = Math.abs(velocityX) > 500;
+      const progress = swipeProgress.value;
+      const absProgress = Math.abs(progress);
+      // A fling only counts if it's fast, moving in the SAME direction as the
+      // drag, and past a small minimum — otherwise dragging out and returning
+      // to the start (a fast reverse fling) would wrongly commit a turn.
+      const fastSwipe =
+        Math.abs(velocityX) > 500 &&
+        absProgress > 24 &&
+        Math.sign(velocityX) === Math.sign(progress);
 
       if (absProgress > SWIPE_THRESHOLD || fastSwipe) {
-        const dir = swipeProgress.value < 0 ? "next" : "prev";
-        const target = swipeProgress.value < 0 ? -CARD_WIDTH : CARD_WIDTH;
+        const dir = progress < 0 ? "next" : "prev";
+        const target = progress < 0 ? -CARD_WIDTH : CARD_WIDTH;
 
         swipeProgress.value = withTiming(
           target,
@@ -519,111 +591,18 @@ export default function VerseDetails() {
           () => runOnJS(changeVerse)(dir),
         );
       } else {
-        swipeProgress.value = withTiming(0, {
-          duration: 280,
-          easing: Easing.out(Easing.cubic),
-        });
+        swipeProgress.value = withTiming(
+          0,
+          {
+            duration: 280,
+            easing: Easing.out(Easing.cubic),
+          },
+          () => runOnJS(resetTurn)(),
+        );
       }
     },
-    [changeVerse],
+    [changeVerse, resetTurn],
   );
-
-  // ═══════════════════════════════════════════════════════════════
-  //  PAGE CURL ANIMATED STYLES
-  // ═══════════════════════════════════════════════════════════════
-
-  // ─── UNIFIED PAGE-TURN MODEL ───────────────────────────────────
-  // The page being turned is always anchored at the LEFT, with its lifted
-  // (leading) edge on the RIGHT and the curl riding that edge. The destination
-  // page sits static, full-width, underneath. This makes "next" and "prev" the
-  // exact same physical motion — only which page turns and where its leading
-  // edge travels differs:
-  //   • next (swipe ←): the CURRENT page turns away; leading edge runs W → 0.
-  //   • prev (swipe →): the PREVIOUS page sweeps in; leading edge runs 0 → W.
-  const leadingEdgeFor = (p: number, absP: number) => {
-    "worklet";
-    return p < 0 ? CARD_WIDTH - absP : absP;
-  };
-
-  // CURRENT page: full-width at rest / when going back (it is the base for
-  // prev). When going forward it becomes the turning page and shrinks.
-  const currentPageClipStyle = useAnimatedStyle(() => {
-    const p = swipeProgress.value;
-    if (p >= 0) return { width: CARD_WIDTH, left: 0 };
-
-    const absP = Math.min(-p, CARD_WIDTH);
-    const curlW = computeCurlWidth(absP);
-    const leadingEdge = CARD_WIDTH - absP;
-    const flatW = Math.max(0, leadingEdge - curlW);
-    return { width: flatW, left: 0 };
-  });
-
-  // PREVIOUS page: hidden at rest, sweeps in from the left when going back.
-  const prevPageClipStyle = useAnimatedStyle(() => {
-    const p = swipeProgress.value;
-    if (p <= 0) return { width: 0, left: 0 };
-
-    const absP = Math.min(p, CARD_WIDTH);
-    const curlW = computeCurlWidth(absP);
-    const flatW = Math.max(0, absP - curlW);
-    return { width: flatW, left: 0 };
-  });
-
-  // The rolled-over back of the turning page — shaded like a paper cylinder
-  // and tilted in 3D so its lifted edge reads with real depth.
-  const curlStyle = useAnimatedStyle(() => {
-    const p = swipeProgress.value;
-    if (p === 0)
-      return { opacity: 0, width: 0, left: -200, transform: [] };
-
-    const absP = Math.min(Math.abs(p), CARD_WIDTH);
-    const curlW = computeCurlWidth(absP);
-    const intensity = computeIntensity(absP);
-    const leadingEdge = leadingEdgeFor(p, absP);
-    const left = Math.max(0, leadingEdge - curlW);
-
-    return {
-      opacity: absP > 2 ? 1 : 0,
-      width: curlW,
-      left,
-      transform: [
-        { perspective: 1000 },
-        { rotateY: `${-FLAP_MAX_TILT * intensity}deg` },
-      ],
-    };
-  });
-
-  // Soft shadow the lifted page casts onto the page beneath it.
-  const shadowStyle = useAnimatedStyle(() => {
-    const p = swipeProgress.value;
-    if (p === 0) return { opacity: 0, left: -200, width: 0 };
-
-    const absP = Math.min(Math.abs(p), CARD_WIDTH);
-    const shadowW = computeShadowWidth(absP);
-    const intensity = computeIntensity(absP);
-    const leadingEdge = leadingEdgeFor(p, absP);
-
-    return {
-      opacity: intensity,
-      width: shadowW,
-      left: leadingEdge,
-    };
-  });
-
-  // Bright sheen along the very crest of the curl.
-  const highlightStyle = useAnimatedStyle(() => {
-    const p = swipeProgress.value;
-    if (p === 0) return { opacity: 0, left: -200 };
-
-    const absP = Math.min(Math.abs(p), CARD_WIDTH);
-    const intensity = computeIntensity(absP);
-    const leadingEdge = leadingEdgeFor(p, absP);
-
-    return {
-      opacity: intensity * 0.9,
-      left: leadingEdge - HIGHLIGHT_WIDTH,
-    };
-  });
 
   // ═══════════════════════════════════════════════════════════════
   //  TOGGLE HANDLERS WITH CELEBRATION + GOAL NOTIFICATION
@@ -634,10 +613,10 @@ export default function VerseDetails() {
 
     if (v) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // One clean pop: quick scale-up, then a well-damped settle (no wobble).
       favScale.value = withSequence(
-        withTiming(0.7, { duration: 80 }),
-        withSpring(1.2, { damping: 4, stiffness: 300 }),
-        withSpring(1, { damping: 8, stiffness: 200 }),
+        withTiming(1.12, { duration: 120, easing: Easing.out(Easing.cubic) }),
+        withSpring(1, { damping: 15, stiffness: 200, mass: 0.5 }),
       );
       favGlow.value = withSequence(
         withTiming(0.8, { duration: 150 }),
@@ -647,8 +626,8 @@ export default function VerseDetails() {
     } else {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       favScale.value = withSequence(
-        withTiming(0.85, { duration: 100 }),
-        withSpring(1, { damping: 6, stiffness: 250 }),
+        withTiming(0.94, { duration: 90 }),
+        withSpring(1, { damping: 15, stiffness: 200, mass: 0.5 }),
       );
     }
 
@@ -698,10 +677,10 @@ export default function VerseDetails() {
       // Haptic + celebration animation
       if (updatedReadState) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // One clean pop: quick scale-up, then a well-damped settle (no wobble).
         readScale.value = withSequence(
-          withTiming(0.7, { duration: 80 }),
-          withSpring(1.2, { damping: 4, stiffness: 300 }),
-          withSpring(1, { damping: 8, stiffness: 200 }),
+          withTiming(1.12, { duration: 120, easing: Easing.out(Easing.cubic) }),
+          withSpring(1, { damping: 15, stiffness: 200, mass: 0.5 }),
         );
         readGlow.value = withSequence(
           withTiming(0.8, { duration: 150 }),
@@ -711,8 +690,8 @@ export default function VerseDetails() {
       } else {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         readScale.value = withSequence(
-          withTiming(0.85, { duration: 100 }),
-          withSpring(1, { damping: 6, stiffness: 250 }),
+          withTiming(0.94, { duration: 90 }),
+          withSpring(1, { damping: 15, stiffness: 200, mass: 0.5 }),
         );
       }
 
@@ -917,12 +896,12 @@ export default function VerseDetails() {
                       fill={isFavorite ? "#C41E3A" : "transparent"}
                     />
                   </View>
-                  <Text
-                    className="ml-2 text-[13px] font-semibold"
-                    style={{ color: isFavorite ? "#C41E3A" : palette.muted }}
-                  >
-                    {isFavorite ? t.favourited : t.favourite}
-                  </Text>
+                  <ToggleLabel
+                    on={t.favourited}
+                    off={t.favourite}
+                    active={isFavorite}
+                    color={isFavorite ? "#C41E3A" : palette.muted}
+                  />
                 </TouchableOpacity>
               </Animated.View>
             </View>
@@ -966,12 +945,12 @@ export default function VerseDetails() {
                       />
                     )}
                   </View>
-                  <Text
-                    className="ml-2 text-[13px] font-semibold"
-                    style={{ color: isRead ? "#5BB974" : palette.muted }}
-                  >
-                    {isRead ? t.completed : t.markAsRead}
-                  </Text>
+                  <ToggleLabel
+                    on={t.completed}
+                    off={t.markAsRead}
+                    active={isRead}
+                    color={isRead ? "#5BB974" : palette.muted}
+                  />
                 </TouchableOpacity>
               </Animated.View>
             </View>
@@ -979,7 +958,7 @@ export default function VerseDetails() {
         </View>
 
         {/* ═══════════════════════════════════════════════════════
-            PAGE CURL LAYERS
+            PAGE CURL (Skia paper warp)
         ═══════════════════════════════════════════════════════ */}
         <View style={styles.pagesContainer}>
           <PanGestureHandler
@@ -989,106 +968,81 @@ export default function VerseDetails() {
             failOffsetY={[-15, 15]}
           >
             <Animated.View style={styles.gestureContainer}>
-              {/* Base destination page — static, full width, underneath. */}
-              {nextVerse && (
-                <View style={[styles.clipLayer, styles.fullCard, { zIndex: 1 }]}>
-                  <View style={[styles.innerCard, styles.fullCard]}>
-                    {renderVerseCard(nextVerse, currentVerseId + 1)}
-                  </View>
+              {/* Destination page, revealed behind as the current page curls
+                  off — next on the right, previous on the left. */}
+              {turnDir === "next" && nextVerse && (
+                <View style={styles.pageAbs}>
+                  {renderVerseCard(nextVerse, currentVerseId + 1)}
+                </View>
+              )}
+              {turnDir === "prev" && prevVerse && (
+                <View style={styles.pageAbs}>
+                  {renderVerseCard(prevVerse, currentVerseId - 1)}
                 </View>
               )}
 
-              {/* Current page: base when going back, turning leaf when going forward. */}
+              {/* Shadow the roll casts on the revealed page (dark side sits
+                  toward the roll). */}
               <Animated.View
-                style={[styles.clipLayer, { zIndex: 2 }, currentPageClipStyle]}
+                style={[styles.rollLayer, rollShadow]}
+                pointerEvents="none"
               >
-                <View style={[styles.innerCard, styles.fullCard]}>
-                  {renderVerseCard(verse, currentVerseId, true)}
-                </View>
+                <LinearGradient
+                  colors={["rgba(0,0,0,0.34)", "rgba(0,0,0,0)"]}
+                  start={turnDir === "prev" ? { x: 1, y: 0 } : { x: 0, y: 0 }}
+                  end={turnDir === "prev" ? { x: 0, y: 0 } : { x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
               </Animated.View>
 
-              {/* Previous page: sweeps in over the current page when going back. */}
-              {prevVerse && (
-                <Animated.View
-                  style={[styles.clipLayer, { zIndex: 3 }, prevPageClipStyle]}
-                >
-                  <View style={[styles.innerCard, styles.fullCard]}>
-                    {renderVerseCard(prevVerse, currentVerseId - 1)}
-                  </View>
-                </Animated.View>
-              )}
-
-              {/* Soft shadow the lifted leaf casts on the page beneath it */}
+              {/* Flat part of the CURRENT page. Live/scrollable at rest. */}
               <Animated.View
-                style={[styles.foldShadow, { zIndex: 6 }, shadowStyle]}
+                style={[styles.clipLayer, flatClip]}
+                pointerEvents={turnDir ? "none" : "auto"}
+              >
+                <Animated.View style={[styles.flatContentInner, flatContent]}>
+                  {renderVerseCard(verse, currentVerseId, true)}
+                </Animated.View>
+              </Animated.View>
+
+              {/* Self-shadow where the flat page bends up into the roll (dark
+                  edge sits AT the fold). */}
+              <Animated.View
+                style={[styles.rollLayer, foldSelfShadow]}
+                pointerEvents="none"
+              >
+                <LinearGradient
+                  colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.3)"]}
+                  start={turnDir === "prev" ? { x: 1, y: 0 } : { x: 0, y: 0 }}
+                  end={turnDir === "prev" ? { x: 0, y: 0 } : { x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              </Animated.View>
+
+              {/* The rolled paper cylinder: a SOLID paper base with shading on
+                  top — dark crease → bright crest → paper body → shadowed
+                  underside → deep outer edge. Crease sits at the fold. */}
+              <Animated.View
+                style={[
+                  styles.rollLayer,
+                  { backgroundColor: palette.page },
+                  rollStyle,
+                ]}
                 pointerEvents="none"
               >
                 <LinearGradient
                   colors={[
                     "rgba(0,0,0,0.4)",
-                    "rgba(0,0,0,0.22)",
-                    "rgba(0,0,0,0.1)",
-                    "rgba(0,0,0,0.03)",
-                    "rgba(0,0,0,0)",
+                    "rgba(0,0,0,0.05)",
+                    "rgba(255,255,255,0.55)",
+                    "rgba(255,255,255,0)",
+                    "rgba(0,0,0,0.28)",
+                    "rgba(0,0,0,0.55)",
                   ]}
-                  locations={[0, 0.15, 0.35, 0.6, 1]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
-                />
-              </Animated.View>
-
-              {/* Rolled-over back of the turning leaf — shaded like a paper cylinder */}
-              <Animated.View
-                style={[
-                  styles.foldBack,
-                  { backgroundColor: palette.foldBack, zIndex: 8 },
-                  curlStyle,
-                ]}
-                pointerEvents="none"
-              >
-                <LinearGradient
-                  // crease (meets flat page) → lit apex → darkening underside
-                  colors={
-                    isDarkMode
-                      ? [
-                          "rgba(0,0,0,0.34)",
-                          "rgba(255,255,255,0.16)",
-                          "rgba(255,255,255,0.07)",
-                          "rgba(0,0,0,0.22)",
-                          "rgba(0,0,0,0.42)",
-                          "rgba(0,0,0,0.62)",
-                        ]
-                      : [
-                          "rgba(0,0,0,0.12)",
-                          "rgba(255,255,255,0.8)",
-                          "rgba(255,255,255,0.5)",
-                          "rgba(0,0,0,0.05)",
-                          "rgba(0,0,0,0.22)",
-                          "rgba(0,0,0,0.44)",
-                        ]
-                  }
-                  locations={[0, 0.22, 0.45, 0.68, 0.86, 1]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
-                />
-              </Animated.View>
-
-              {/* Bright sheen along the crest of the curl */}
-              <Animated.View
-                style={[styles.foldHighlight, { zIndex: 9 }, highlightStyle]}
-                pointerEvents="none"
-              >
-                <LinearGradient
-                  colors={
-                    isDarkMode
-                      ? ["rgba(255,255,255,0.04)", "rgba(255,255,255,0.22)"]
-                      : ["rgba(255,255,255,0.12)", "rgba(255,255,255,0.97)"]
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
+                  locations={[0, 0.16, 0.34, 0.56, 0.82, 1]}
+                  start={turnDir === "prev" ? { x: 1, y: 0 } : { x: 0, y: 0 }}
+                  end={turnDir === "prev" ? { x: 0, y: 0 } : { x: 1, y: 0 }}
+                  style={styles.rollGradient}
                 />
               </Animated.View>
             </Animated.View>
@@ -1116,26 +1070,48 @@ const styles = StyleSheet.create({
   },
   pagesContainer: {
     flex: 1,
+    overflow: "hidden",
   },
   gestureContainer: {
     flex: 1,
     position: "relative",
   },
+  // A full-card page pinned to the left binding edge.
+  pageAbs: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: CARD_WIDTH,
+  },
+  // Clip window for the still-flat part of the current page.
   clipLayer: {
     position: "absolute",
     top: 0,
     bottom: 0,
     overflow: "hidden",
   },
-  innerCard: {
+  // Full-width card content positioned inside the clip window (anchored left).
+  flatContentInner: {
     position: "absolute",
     top: 0,
-    height: "100%",
-  },
-  // Full-width leaf anchored to the left edge (shared by every page layer).
-  fullCard: {
-    width: CARD_WIDTH,
+    bottom: 0,
     left: 0,
+    width: CARD_WIDTH,
+  },
+  // The rolled paper cylinder / its cast shadow, riding the fold.
+  rollLayer: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    borderTopRightRadius: 4,
+    borderBottomRightRadius: 4,
+    overflow: "hidden",
+  },
+  rollGradient: {
+    ...StyleSheet.absoluteFillObject,
+    borderTopRightRadius: 3,
+    borderBottomRightRadius: 3,
   },
   pageContainer: {
     flex: 1,
@@ -1236,23 +1212,6 @@ const styles = StyleSheet.create({
     height: 2,
     borderRadius: 1,
   },
-  foldBack: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    borderRadius: 1,
-  },
-  foldShadow: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-  },
-  foldHighlight: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: HIGHLIGHT_WIDTH,
-  },
 
   // ─── CELEBRATION STYLES ──────────────────────────────────────
   celebrationAnchor: {
@@ -1278,6 +1237,24 @@ const styles = StyleSheet.create({
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
+  },
+  // Reserves the width of the longer label state so toggling never reflows.
+  labelSizer: {
+    marginLeft: 8,
+    height: 18,
+    overflow: "hidden",
+  },
+  labelText: {
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 18,
+    opacity: 0,
+  },
+  labelVisible: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    opacity: 1,
   },
   iconGlow: {
     position: "absolute",
