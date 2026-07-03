@@ -93,14 +93,8 @@ export default function GuidanceScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >
-        {/* ── Header ── */}
+        {/* ── Header (tab root — no back button) ── */}
         <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backBtn}
-          >
-            <ChevronLeft size={22} color={c.text} />
-          </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={[styles.pageTitle, { color: c.text }]}>
               {language === "hi" ? "आप कैसा महसूस कर रहे हैं?" : t.howAreYouFeeling}
@@ -109,7 +103,6 @@ export default function GuidanceScreen() {
               {language === "hi" ? "कृष्ण का ज्ञान आपके पास आता है" : t.guidanceSubtitle}
             </Text>
           </View>
-          <View style={{ width: 38 }} />
         </Animated.View>
 
         {/* ── Decorative OM ── */}
@@ -141,7 +134,7 @@ export default function GuidanceScreen() {
                 situation={displaySituation}
                 onPress={() =>
                   router.push(
-                    `/(tabs)/home/guidance/${situation.id}` as any
+                    `/(tabs)/guidance/${situation.id}` as any
                   )
                 }
                 isDarkMode={isDarkMode}

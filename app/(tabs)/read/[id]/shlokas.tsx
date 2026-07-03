@@ -137,7 +137,7 @@ export default function ShlokasScreen() {
                 activeOpacity={0.8}
                 onPress={() =>
                   router.push(
-                    `/home/chapters/${id}/${verse.verse_number}?verses_count=${chapter.verses_count}`
+                    `/verse/${id}/${verse.verse_number}?verses_count=${chapter.verses_count}`
                   )
                 }
                 style={[

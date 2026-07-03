@@ -4,7 +4,17 @@ const translations = {
   en: {
     // Tab names
     tabHome: 'Home',
+    tabRead: 'Read',
+    tabGuidance: 'Guidance',
+    tabPractice: 'Practice',
+    tabYou: 'You',
     tabExplore: 'Explore',
+
+    // Profile / stats
+    statVerses: 'Verses',
+    statStreak: 'Streak',
+    statBadges: 'Badges',
+    versesReadLabel: 'verses read',
 
     // Home screen
     greetingMorning: 'GOOD MORNING',
@@ -159,7 +169,17 @@ const translations = {
   hi: {
     // Tab names
     tabHome: 'होम',
+    tabRead: 'पढ़ें',
+    tabGuidance: 'मार्गदर्शन',
+    tabPractice: 'अभ्यास',
+    tabYou: 'आप',
     tabExplore: 'एक्सप्लोर',
+
+    // Profile / stats
+    statVerses: 'श्लोक',
+    statStreak: 'श्रृंखला',
+    statBadges: 'बैज',
+    versesReadLabel: 'श्लोक पढ़े',
 
     // Home screen
     greetingMorning: 'शुभ प्रभात',

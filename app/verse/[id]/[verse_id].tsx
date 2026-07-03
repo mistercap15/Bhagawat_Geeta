@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   View,
@@ -15,6 +15,7 @@ import {
   Heart,
   CheckSquare,
   Square,
+  ChevronLeft,
 } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Animated, {
@@ -263,6 +264,7 @@ export default function VerseDetails() {
   const initialVerseId = Number(verse_id);
 
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { isDarkMode } = useTheme();
   const t = useTranslation();
   const { checkAndUpdate, unlockSpecial } = useAchievements();
@@ -848,7 +850,17 @@ export default function VerseDetails() {
     >
       <View style={styles.contentWrapper}>
         {/* Header */}
-        <View className="mb-6">
+        <View className="mb-5">
+          {/* Back button row */}
+          <TouchableOpacity
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={styles.backButton}
+          >
+            <ChevronLeft size={22} color={palette.text} />
+          </TouchableOpacity>
+
           <Text
             className="text-[18px] font-semibold tracking-wide text-center"
             style={{ color: palette.accent }}
@@ -1066,7 +1078,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: CARD_HORIZONTAL_PADDING,
     paddingTop: 16,
-    paddingBottom: 90,
+    // No tab bar on this screen (it sits over the tabs) — bottom safe-area is
+    // handled by the root ThemedLayout, so only a small gap is needed. This
+    // lets the verse card grow into the reclaimed space.
+    paddingBottom: 14,
+  },
+  // Matches the plain back button used across the app (no circle/border/bg).
+  backButton: {
+    position: "absolute",
+    left: 0,
+    top: -3,
+    zIndex: 10,
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
   },
   pagesContainer: {
     flex: 1,

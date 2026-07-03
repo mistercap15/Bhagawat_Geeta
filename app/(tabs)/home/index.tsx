@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   ScrollView,
@@ -16,14 +16,14 @@ import { getUserRank } from "@/utils/achievements";
 import {
   Share2,
   BookOpen,
-  Star,
-  Sparkles,
+  Compass,
   Target,
-  Trophy,
-  Heart,
+  Sparkles,
   ChevronRight,
+  Play,
 } from "lucide-react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { getSlok } from "@/utils/gitaData";
 import * as Sharing from "expo-sharing";
@@ -37,48 +37,25 @@ import homeLogo from "../../../assets/images/splashScreen.png";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_W = (SCREEN_WIDTH - 54) / 2; // 2 cols, 20px side margins, 14px gap
 
-const NAV_ITEMS = [
+// Quick jumps to the main tabs — the full features live in the bottom nav now.
+const QUICK_ACTIONS = [
   {
     icon: BookOpen,
     labelKey: "readChapters" as const,
-    subKey: "readChaptersSub" as const,
-    route: "/(tabs)/home/chapters",
+    route: "/(tabs)/read" as const,
     gradient: ["#FF6B35", "#F7931E"] as [string, string],
   },
   {
-    icon: Star,
-    labelKey: "favorites" as const,
-    subKey: "favoritesSub" as const,
-    route: "/(tabs)/home/favorite",
-    gradient: ["#F7971E", "#FFD200"] as [string, string],
-  },
-  {
-    icon: Sparkles,
-    labelKey: "continueReading" as const,
-    subKey: "continueReadingSub" as const,
-    route: "/(tabs)/home/continue-reading",
-    gradient: ["#1565C0", "#1DA1F2"] as [string, string],
+    icon: Compass,
+    labelKey: "guidance" as const,
+    route: "/(tabs)/guidance" as const,
+    gradient: ["#F9844A", "#D62828"] as [string, string],
   },
   {
     icon: Target,
     labelKey: "dailyPractice" as const,
-    subKey: "dailyPracticeSub" as const,
-    route: "/(tabs)/home/daily-practice",
+    route: "/(tabs)/practice" as const,
     gradient: ["#11998E", "#38EF7D"] as [string, string],
-  },
-  {
-    icon: Trophy,
-    labelKey: "myJourney" as const,
-    subKey: "myJourneySub" as const,
-    route: "/(tabs)/home/achievements",
-    gradient: ["#F09819", "#EDDE5D"] as [string, string],
-  },
-  {
-    icon: Heart,
-    labelKey: "guidance" as const,
-    subKey: "guidanceSub" as const,
-    route: "/(tabs)/home/guidance",
-    gradient: ["#F9844A", "#D62828"] as [string, string],
   },
 ];
 
@@ -87,6 +64,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [lastRead, setLastRead] = useState<{ chapter: number; verse: number } | null>(null);
 
   const router = useRouter();
   const { isDarkMode } = useTheme();
@@ -123,6 +101,25 @@ export default function HomeScreen() {
     9: 34, 10: 42, 11: 55, 12: 20, 13: 35, 14: 27, 15: 20,
     16: 24, 17: 28, 18: 78,
   };
+
+  // Refresh "continue reading" whenever Home regains focus (e.g. after reading).
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        try {
+          const raw = await AsyncStorage.getItem("last_read");
+          if (raw) {
+            const d = JSON.parse(raw);
+            setLastRead({ chapter: Number(d.chapter), verse: Number(d.verse) });
+          } else {
+            setLastRead(null);
+          }
+        } catch {
+          setLastRead(null);
+        }
+      })();
+    }, []),
+  );
 
   const fetchShloka = async () => {
     setLoading(true);
@@ -244,14 +241,14 @@ export default function HomeScreen() {
         >
           {[
             { emoji: currentRank.emoji, value: currentRank.title, label: "Rank", color: currentRank.color },
-            { emoji: "📖", value: String(userStats.totalVersesRead), label: "Verses", color: c.text },
-            { emoji: "🔥", value: String(userStats.currentStreak), label: "Streak", color: "#E8540A" },
-            { emoji: "🏆", value: String(unlockedAchievements.length), label: "Badges", color: "#D97706" },
+            { emoji: "📖", value: String(userStats.totalVersesRead), label: t.statVerses, color: c.text },
+            { emoji: "🔥", value: String(userStats.currentStreak), label: t.statStreak, color: "#E8540A" },
+            { emoji: "🏆", value: String(unlockedAchievements.length), label: t.statBadges, color: "#D97706" },
           ].map((s, i) => (
             <TouchableOpacity
               key={i}
               activeOpacity={0.75}
-              onPress={() => router.push("/(tabs)/home/achievements" as any)}
+              onPress={() => router.push("/(tabs)/you/achievements")}
               style={[styles.statChip, { backgroundColor: c.card, borderColor: c.border }]}
             >
               <Text style={styles.statEmoji}>{s.emoji}</Text>
@@ -260,6 +257,43 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
         </Animated.View>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            CONTINUE READING  (resume where you left off)
+        ═══════════════════════════════════════════════════════════════════ */}
+        {lastRead && (
+          <Animated.View
+            entering={FadeInDown.duration(500).delay(260)}
+            style={styles.section}
+          >
+            <TouchableOpacity
+              activeOpacity={0.88}
+              onPress={() =>
+                router.push(
+                  `/verse/${lastRead.chapter}/${lastRead.verse}?verses_count=${VERSE_COUNTS[lastRead.chapter] ?? 0}`,
+                )
+              }
+            >
+              <LinearGradient
+                colors={isDarkMode ? ["#071E38", "#0A3260"] : ["#8A4D24", "#D97706"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.continueCard}
+              >
+                <View style={styles.continueIcon}>
+                  <Play size={18} color="#fff" fill="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.continueLabel}>{t.continueReading}</Text>
+                  <Text style={styles.continueMeta}>
+                    {t.chapter} {lastRead.chapter} · {t.verse} {lastRead.verse}
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="rgba(255,255,255,0.9)" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* ═══════════════════════════════════════════════════════════════════
             SHLOKA OF THE DAY
@@ -343,46 +377,32 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            NAVIGATION GRID
+            QUICK ACTIONS  (jump into the main tabs)
         ═══════════════════════════════════════════════════════════════════ */}
         <Animated.View entering={FadeInDown.duration(500).delay(350)} style={styles.section}>
           <Text style={[styles.sectionTitle, { color: c.text }]}>{t.beginJourney}</Text>
 
-          <View style={styles.navGrid}>
-            {NAV_ITEMS.map((item) => {
+          <View style={styles.quickRow}>
+            {QUICK_ACTIONS.map((item) => {
               const Icon = item.icon;
               return (
                 <TouchableOpacity
                   key={item.labelKey}
-                  activeOpacity={0.82}
-                  onPress={() => router.push(item.route as any)}
-                  style={[styles.navCard, { backgroundColor: c.card, borderColor: c.border }]}
+                  activeOpacity={0.85}
+                  onPress={() => router.push(item.route)}
+                  style={[styles.quickCard, { backgroundColor: c.card, borderColor: c.border }]}
                 >
-                  {/* Gradient icon area */}
                   <LinearGradient
                     colors={item.gradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.navIconArea}
+                    style={styles.quickIcon}
                   >
-                    <Icon size={28} color="#FFFFFF" strokeWidth={1.8} />
+                    <Icon size={22} color="#FFFFFF" strokeWidth={2} />
                   </LinearGradient>
-
-                  {/* Text area */}
-                  <View style={styles.navTextArea}>
-                    <Text style={[styles.navLabel, { color: c.text }]} numberOfLines={1}>
-                      {t[item.labelKey]}
-                    </Text>
-                    <Text style={[styles.navSub, { color: c.sub }]} numberOfLines={2}>
-                      {t[item.subKey]}
-                    </Text>
-                  </View>
-
-                  <ChevronRight
-                    size={13}
-                    color={c.sub}
-                    style={{ position: "absolute", bottom: 14, right: 12 }}
-                  />
+                  <Text style={[styles.quickLabel, { color: c.text }]} numberOfLines={1}>
+                    {t[item.labelKey]}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
@@ -616,35 +636,58 @@ const styles = StyleSheet.create({
   },
   shareBtnText: { fontSize: 13, fontWeight: "700" },
 
-  // ── Nav grid ──────────────────────────────────────────────────────────────
-  navGrid: {
+  // ── Continue reading ──────────────────────────────────────────────────────
+  continueCard: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 14,
-    justifyContent: "space-between",
-  },
-  navCard: {
-    width: CARD_W,
-    borderRadius: 22,
-    borderWidth: 1,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.09,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  navIconArea: {
-    height: 84,
-    justifyContent: "center",
     alignItems: "center",
+    gap: 14,
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    shadowColor: "#8A4D24",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  navTextArea: {
-    padding: 14,
-    paddingBottom: 36,
+  continueIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  navLabel: { fontSize: 14, fontWeight: "700", marginBottom: 4 },
-  navSub: { fontSize: 12, lineHeight: 17 },
+  continueLabel: { color: "#fff", fontSize: 15, fontWeight: "800" },
+  continueMeta: { color: "rgba(255,255,255,0.82)", fontSize: 12, marginTop: 2 },
+
+  // ── Quick actions ─────────────────────────────────────────────────────────
+  quickRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  quickCard: {
+    flex: 1,
+    alignItems: "center",
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  quickIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  quickLabel: { fontSize: 12.5, fontWeight: "700", textAlign: "center" },
 
   // ── Footer ────────────────────────────────────────────────────────────────
   footer: {

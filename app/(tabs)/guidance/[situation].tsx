@@ -348,7 +348,7 @@ export default function SituationDetailScreen() {
                         activeOpacity={0.7}
                         onPress={() =>
                           router.push(
-                            `/(tabs)/home/chapters/${verseRef.chapter}/${verseRef.verse}?verses_count=${VERSES_COUNT[verseRef.chapter] ?? 72}` as any
+                            `/verse/${verseRef.chapter}/${verseRef.verse}?verses_count=${VERSES_COUNT[verseRef.chapter] ?? 72}` as any
                           )
                         }
                         style={styles.readMoreRow}

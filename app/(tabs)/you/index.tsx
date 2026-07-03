@@ -12,6 +12,8 @@ import { useRouter } from "expo-router";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage, Language } from "@/context/LanguageContext";
 import { useTranslation } from "@/utils/translations";
+import { useAchievements } from "@/context/AchievementContext";
+import { getUserRank } from "@/utils/achievements";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Trash2,
@@ -25,6 +27,8 @@ import {
   Languages,
   Check,
   X,
+  Trophy,
+  Heart,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import BottomSheet, { BottomSheetRef } from "@/components/BottomSheet";
@@ -37,13 +41,13 @@ const MENU_SECTIONS = [
         labelKey: "termsConditions" as const,
         icon: FileText,
         color: "#3B82F6",
-        route: "/(tabs)/explore/termsCondition",
+        route: "/(tabs)/you/termsCondition",
       },
       {
         labelKey: "privacyPolicy" as const,
         icon: Shield,
         color: "#22C55E",
-        route: "/(tabs)/explore/privacyPolicy",
+        route: "/(tabs)/you/privacyPolicy",
       },
     ],
   },
@@ -54,19 +58,19 @@ const MENU_SECTIONS = [
         labelKey: "rateApp" as const,
         icon: Star,
         color: "#F59E0B",
-        route: "/(tabs)/explore/rateApp",
+        route: "/(tabs)/you/rateApp",
       },
       {
         labelKey: "contactSupport" as const,
         icon: Mail,
         color: "#E67E22",
-        route: "/(tabs)/explore/contactSupport",
+        route: "/(tabs)/you/contactSupport",
       },
       {
         labelKey: "about" as const,
         icon: Info,
         color: "#9B59B6",
-        route: "/(tabs)/explore/about",
+        route: "/(tabs)/you/about",
       },
     ],
   },
@@ -82,6 +86,8 @@ const Explore = () => {
   const { toggleTheme, isDarkMode } = useTheme();
   const { language, setLanguage } = useLanguage();
   const t = useTranslation();
+  const { userStats, unlockedAchievements } = useAchievements();
+  const rank = getUserRank(userStats.totalVersesRead);
   const sheetRef = useRef<BottomSheetRef>(null);
 
   const c = {
@@ -109,8 +115,61 @@ const Explore = () => {
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={[styles.pageTitle, { color: c.text }]}>{t.exploreTitle}</Text>
-          <Text style={[styles.pageSub, { color: c.sub }]}>{t.exploreSubtitle}</Text>
+          {/* ── Profile header ── */}
+          <View style={[styles.profileCard, { backgroundColor: c.card, borderColor: c.border }]}>
+            <LinearGradient
+              colors={isDarkMode ? ["#071E38", "#0A3260"] : ["#8A4D24", "#D97706"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.profileBanner}
+            >
+              <View style={styles.rankBadge}>
+                <Text style={{ fontSize: 30 }}>{rank.emoji}</Text>
+              </View>
+              <Text style={styles.profileRank}>{rank.title}</Text>
+              <Text style={styles.profileRankSub}>
+                {userStats.totalVersesRead} {t.versesReadLabel}
+              </Text>
+            </LinearGradient>
+
+            <View style={styles.profileStatsRow}>
+              {[
+                { value: String(userStats.totalVersesRead), label: t.statVerses },
+                { value: String(userStats.currentStreak), label: t.statStreak },
+                { value: String(unlockedAchievements.length), label: t.statBadges },
+              ].map((s, i) => (
+                <View key={i} style={styles.profileStat}>
+                  <Text style={[styles.profileStatValue, { color: c.text }]}>{s.value}</Text>
+                  <Text style={[styles.profileStatLabel, { color: c.sub }]}>{s.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={{ borderTopWidth: 1, borderTopColor: c.border }}>
+              <TouchableOpacity
+                activeOpacity={0.72}
+                style={[styles.menuRow, { borderBottomWidth: 1, borderBottomColor: c.border }]}
+                onPress={() => router.push("/(tabs)/you/achievements")}
+              >
+                <View style={[styles.menuIcon, { backgroundColor: "#F59E0B22" }]}>
+                  <Trophy size={18} color="#F59E0B" />
+                </View>
+                <Text style={[styles.menuLabel, { color: c.text, flex: 1 }]}>{t.myJourney}</Text>
+                <ChevronRight size={16} color={c.sub} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.72}
+                style={styles.menuRow}
+                onPress={() => router.push("/(tabs)/you/favorites")}
+              >
+                <View style={[styles.menuIcon, { backgroundColor: "#EF444422" }]}>
+                  <Heart size={18} color="#EF4444" />
+                </View>
+                <Text style={[styles.menuLabel, { color: c.text, flex: 1 }]}>{t.favorites}</Text>
+                <ChevronRight size={16} color={c.sub} />
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {/* ── Appearance ── */}
           <Text style={[styles.sectionLabel, { color: c.sub }]}>{t.appearance}</Text>
@@ -332,6 +391,44 @@ const styles = StyleSheet.create({
 
   pageTitle: { fontSize: 28, fontWeight: "800", marginBottom: 4 },
   pageSub: { fontSize: 13, marginBottom: 24 },
+
+  // ── Profile header ──
+  profileCard: {
+    borderRadius: 22,
+    borderWidth: 1,
+    overflow: "hidden",
+    marginBottom: 22,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  profileBanner: {
+    alignItems: "center",
+    paddingTop: 22,
+    paddingBottom: 20,
+  },
+  rankBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  profileRank: { color: "#fff", fontSize: 19, fontWeight: "800", letterSpacing: 0.3 },
+  profileRankSub: { color: "rgba(255,255,255,0.8)", fontSize: 12, marginTop: 3 },
+  profileStatsRow: {
+    flexDirection: "row",
+    paddingVertical: 16,
+  },
+  profileStat: { flex: 1, alignItems: "center" },
+  profileStatValue: { fontSize: 20, fontWeight: "800" },
+  profileStatLabel: { fontSize: 11, fontWeight: "500", marginTop: 2 },
 
   sectionLabel: {
     fontSize: 11,

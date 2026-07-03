@@ -7,7 +7,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialLoader from "@/components/MaterialLoader";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ChevronRight, BookMarked } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 // Each chapter gets a distinct accent colour for its badge + progress bar
@@ -81,16 +81,22 @@ export default function ChaptersScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        {/* Page header */}
-        <View style={styles.pageHeader}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <ChevronLeft size={22} color={c.text} />
-          </TouchableOpacity>
-          <View>
-            <Text style={[styles.pageTitle, { color: c.text }]}>{t.allChapters}</Text>
-            <Text style={[styles.pageSub, { color: c.sub }]}>
-              {t.chaptersSubHeader(totalRead)}
-            </Text>
+        {/* Page header (tab root — no back button) */}
+        <View style={styles.pageHeaderCol}>
+          <Text style={[styles.pageTitle, { color: c.text }]}>{t.allChapters}</Text>
+          <Text style={[styles.pageSub, { color: c.sub }]}>
+            {t.chaptersSubHeader(totalRead)}
+          </Text>
+
+          <View style={styles.chipRow}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/(tabs)/read/continue-reading")}
+              style={[styles.chip, { backgroundColor: c.card, borderColor: c.border }]}
+            >
+              <BookMarked size={15} color={c.sub} />
+              <Text style={[styles.chipText, { color: c.text }]}>{t.continueReading}</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -106,7 +112,7 @@ export default function ChaptersScreen() {
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() =>
-                  router.push(`/(tabs)/home/chapters/${chapter.chapter_number}/shlokas`)
+                  router.push(`/(tabs)/read/${chapter.chapter_number}/shlokas`)
                 }
                 style={[
                   styles.card,
@@ -200,9 +206,21 @@ const styles = StyleSheet.create({
   scroll: { padding: 20, paddingBottom: 110 },
 
   pageHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20, marginTop: 4 },
+  pageHeaderCol: { marginBottom: 18, marginTop: 4 },
   backBtn: { width: 38, height: 38, justifyContent: "center", alignItems: "center" },
   pageTitle: { fontSize: 28, fontWeight: "800" },
   pageSub: { fontSize: 13, marginTop: 3 },
+  chipRow: { flexDirection: "row", gap: 10, marginTop: 14 },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  chipText: { fontSize: 13, fontWeight: "600" },
 
   card: {
     flexDirection: "row",

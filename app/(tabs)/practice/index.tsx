@@ -641,11 +641,8 @@ export default function DailyPracticeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* ── Page header ── */}
+        {/* ── Page header (tab root — no back button) ── */}
         <View style={styles.pageHeader}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <ChevronLeft size={22} color={p.text} />
-          </TouchableOpacity>
           <View style={[styles.pageIconWrap, { backgroundColor: p.iconBg }]}>
             <BookOpen size={22} color={p.accent} />
           </View>

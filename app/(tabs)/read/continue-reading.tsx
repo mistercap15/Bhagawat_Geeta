@@ -102,7 +102,7 @@ export default function ContinueReadingScreen() {
               {t.noReadingHistorySub}
             </Text>
             <TouchableOpacity
-              onPress={() => router.push("/(tabs)/home/chapters")}
+              onPress={() => router.push("/(tabs)/read")}
               activeOpacity={0.8}
               style={styles.browseBtn}
             >
@@ -115,7 +115,7 @@ export default function ContinueReadingScreen() {
               activeOpacity={0.8}
               onPress={() =>
                 router.push(
-                  `/home/chapters/${lastRead.chapter}/${lastRead.verse}?verses_count=${versesCount}`
+                  `/verse/${lastRead.chapter}/${lastRead.verse}?verses_count=${versesCount}`
                 )
               }
               style={[

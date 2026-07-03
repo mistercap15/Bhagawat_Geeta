@@ -417,7 +417,7 @@ export default function AchievementsScreen() {
                     activeOpacity={0.8}
                     onPress={() =>
                       router.push(
-                        `/(tabs)/home/guidance/${session.situationId}` as any
+                        `/(tabs)/guidance/${session.situationId}` as any
                       )
                     }
                     style={styles.guidanceCardInner}

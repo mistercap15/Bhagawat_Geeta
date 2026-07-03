@@ -127,7 +127,7 @@ export default function FavoritesScreen() {
               activeOpacity={0.8}
               onPress={() =>
                 router.push({
-                  pathname: "/home/chapters/[id]/[verse_id]",
+                  pathname: "/verse/[id]/[verse_id]",
                   params: {
                     id: String(verse.chapter),
                     verse_id: String(verse.verse),
