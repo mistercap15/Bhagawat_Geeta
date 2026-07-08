@@ -15,7 +15,7 @@ import { useTranslation } from "@/utils/translations";
 import { LinearGradient } from "expo-linear-gradient";
 import { Code2, Heart, Download, IndianRupee, X, ChevronLeft } from "lucide-react-native";
 import BottomSheet, { BottomSheetRef } from "@/components/BottomSheet";
-import * as MediaLibrary from "expo-media-library";
+import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system/legacy";
 import { Asset } from "expo-asset";
 import Toast from "react-native-toast-message";
@@ -53,12 +53,11 @@ const About = () => {
 
   const saveQrToGallery = async () => {
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
         Toast.show({
           type: "error",
-          text1: isHindi ? "अनुमति अस्वीकृत" : "Permission Denied",
-          text2: isHindi ? "छवियाँ सहेजने के लिए पहुँच की अनुमति दें" : "Please allow access to save images",
+          text1: isHindi ? "साझा करना समर्थित नहीं है" : "Sharing not supported on this device",
         });
         return;
       }
@@ -74,18 +73,16 @@ const About = () => {
       const destUri = `${FileSystem.cacheDirectory}${filename}`;
       await FileSystem.copyAsync({ from: asset.localUri, to: destUri });
 
-      await MediaLibrary.saveToLibraryAsync(destUri);
-
-      Toast.show({
-        type: "success",
-        text1: isHindi ? "QR कोड सहेजा गया!" : "QR Code Saved!",
-        text2: isHindi ? "आपकी फ़ोटो गैलरी में सहेजा गया 📸" : "Saved to your photo gallery 📸",
+      await Sharing.shareAsync(destUri, {
+        mimeType: "image/png",
+        dialogTitle: isHindi ? "UPI QR कोड सहेजें या साझा करें" : "Save or share UPI QR code",
+        UTI: "public.png",
       });
     } catch (err) {
-      console.error("Save QR error:", err);
+      console.error("Share QR error:", err);
       Toast.show({
         type: "error",
-        text1: isHindi ? "QR कोड सहेजा नहीं जा सका" : "Could not save QR code",
+        text1: isHindi ? "QR कोड साझा नहीं किया जा सका" : "Could not share QR code",
         text2: isHindi ? "कृपया पुनः प्रयास करें" : "Please try again",
       });
     }
@@ -249,7 +246,7 @@ const About = () => {
                 { color: isDarkMode ? "#FFB59D" : "#8A4D24" },
               ]}
             >
-              {isHindi ? "QR गैलरी में सेव करें" : "Save QR to Gallery"}
+              {isHindi ? "QR सहेजें या साझा करें" : "Save or Share QR"}
             </Text>
           </TouchableOpacity>
 
